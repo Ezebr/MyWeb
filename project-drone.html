@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四旋翼无人机飞控系统 | Ezebr</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/project.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">EZE<span>BR</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html#projects">返回项目列表</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="project-detail">
+        <div class="container">
+            <a href="index.html#projects" class="back-link"><i class="ph ph-arrow-left"></i> 返回首页</a>
+            
+            <article class="project-article">
+                <header class="project-header">
+                    <h1>四旋翼无人机飞控系统</h1>
+                    <p class="project-subtitle">从视觉识别到自主飞行：CarryPilot 飞控平台开发实战</p>
+                    <div class="project-meta">
+                        <time>2025 全国大学生电子设计竞赛 (H 题)</time>
+                        <div class="tags">
+                            <span>TM4C123</span>
+                            <span>OpenMV</span>
+                            <span>K210</span>
+                            <span>PID</span>
+                            <span>YOLO</span>
+                        </div>
+                    </div>
+                </header>
+
+                <figure class="project-figure">
+                    <img src="https://images.unsplash.com/photo-1473968512647-3e447244af8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="无人机飞控系统">
+                    <figcaption>基于 TI TM4C123GH6PM 的 CarryPilot 飞控平台</figcaption>
+                </figure>
+
+                <div class="project-content">
+                    <h2>项目背景</h2>
+                    <p>在 2025 年全国大学生电子设计竞赛（H 题·野生动物巡查系统）中，需要无人机在复杂野外环境中完成动物目标识别、航线巡航与坐标回传等任务。本文围绕备赛过程中开发的飞控系统展开，重点介绍<strong>视觉识别</strong>与<strong>飞行控制</strong>两大核心模块的设计与实现。</p>
+
+                    <div class="challenge">
+                        <h3>硬件平台</h3>
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>模块</th>
+                                    <th>型号</th>
+                                    <th>作用</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>飞控主芯片</td>
+                                    <td>TI TM4C123GH6PM</td>
+                                    <td>ARM Cortex-M4F, 80MHz，姿态解算、PID 控制、任务调度</td>
+                                </tr>
+                                <tr>
+                                    <td>底部视觉</td>
+                                    <td>OpenMV H7 / K210</td>
+                                    <td>目标检测、巡线、AprilTag 定位</td>
+                                </tr>
+                                <tr>
+                                    <td>IMU</td>
+                                    <td>ICM20689</td>
+                                    <td>三轴陀螺仪 + 三轴加速度计 (1000Hz 采样)</td>
+                                </tr>
+                                <tr>
+                                    <td>气压计</td>
+                                    <td>SPL06</td>
+                                    <td>气压高度</td>
+                                </tr>
+                                <tr>
+                                    <td>对地测距</td>
+                                    <td>TOFSense / VL53L1X</td>
+                                    <td>精确对地高度</td>
+                                </tr>
+                                <tr>
+                                    <td>光流</td>
+                                    <td>LC306</td>
+                                    <td>水平速度估计</td>
+                                </tr>
+                                <tr>
+                                    <td>地面站</td>
+                                    <td>NCLink V1.0.6</td>
+                                    <td>参数调试、遥测显示</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h2>系统架构</h2>
+                    <p>整套系统采用模块化设计，视觉模块通过 UART 高速串口与飞控主控通信，飞控经过 PID 运算后输出 PWM 信号驱动四个电机。</p>
+                    
+                    <figure class="project-figure">
+                        <img src="images/drone-system-architecture.svg" alt="系统架构图">
+                        <figcaption>视觉模块 → 飞控主控 → 电调/电机 系统架构</figcaption>
+                    </figure>
+
+                    <h2>视觉识别系统</h2>
+                    <p>视觉模块通过 UART（256000 baud）与飞控通信，采用统一的 <code>Target_Check</code> 数据结构回传识别结果。支持多种视觉任务，通过 <code>work_mode</code> 变量切换工作模式。</p>
+
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-number">4<small>种</small></span>
+                            <span class="result-label">视觉工作模式</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">95<small>%+</small></span>
+                            <span class="result-label">YOLO 识别准确率</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">20<small>帧</small></span>
+                            <span class="result-label">多帧投票窗口</span>
+                        </div>
+                    </div>
+
+                    <h3>OpenMV 视觉方案</h3>
+                    <p>OpenMV 运行 MicroPython，支持色块检测、AprilTag 定位、巡线跟踪、作物识别等多种视觉任务。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Python - 色块检测实现</span>
+                        </div>
+                        <pre><code>blob_threshold_rgb = [40, 100, 30, 127, 0, 127]  # LAB 阈值
+
+def opv_find_color_blob():
+    img = sensor.snapshot()
+    pixels_max = 0
+    for b in img.find_blobs([blob_threshold_rgb], pixels_threshold=30,
+                             merge=True, margin=50):
+        if pixels_max < b.pixels():
+            pixels_max = b.pixels()
+            target.x = b.cx()        # 色块中心 X
+            target.y = b.cy()        # 色块中心 Y
+            target.pixel = pixels_max # 像素面积
+            target.flag = 1           # 检测到标志</code></pre>
+                    </div>
+
+                    <h3>K210 YOLO 深度学习方案</h3>
+                    <p>针对动物目标种类多、形态差异大的场景，引入 K210 芯片运行 YOLOv2 轻量化目标检测模型。使用 MaixHub 在线训练平台，标注 5 类动物目标。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Python - 多帧投票策略</span>
+                        </div>
+                        <pre><code>N_FRAMES = 20
+
+# 触发后连续采集 20 帧
+for _ in range(N_FRAMES):
+    results.append(detect_one_frame())
+
+# 统计各检测结果出现频次
+freq = {}
+for idx, r in enumerate(results):
+    key = tuple(r['packs'])
+    if key not in freq:
+        freq[key] = [(idx, r['prob_sum'])]
+    else:
+        freq[key].append((idx, r['prob_sum']))
+
+# 选择出现次数最多的结果（并列取置信度最高）
+best_key = max(freq.items(), key=lambda x: (len(x[1]), max(v for _, v in x[1])))[0]</code></pre>
+                    </div>
+
+                    <h2>飞行控制系统</h2>
+                    <p>飞控软件采用<strong>定时器中断驱动</strong>的多任务架构，不同频率处理不同层次的控制。</p>
+
+                    <figure class="project-figure">
+                        <img src="images/drone-pid-control.svg" alt="串级 PID 控制架构">
+                        <figcaption>串级 PID 控制架构：位置环 → 姿态角环 → 角速率环</figcaption>
+                    </figure>
+
+                    <p>控制系统采用经典的<strong>串级 PID</strong> 结构，从内到外分为四层，系统共配置 <strong>20 个 PID 控制器</strong>，涵盖姿态、高度、水平位置、光流、SDK 等全通道。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>C - PID 控制器结构体</span>
+                        </div>
+                        <pre><code>typedef struct {
+    float Kp, Ki, Kd;           // PID 三参数
+    float Expect;               // 期望值
+    float FeedBack;             // 反馈值
+    float Err;                  // 当前偏差
+    float Integrate;            // 积分累加
+    float Integrate_Max;        // 积分限幅
+    float Control_OutPut;       // 控制输出
+    float Control_OutPut_Limit; // 输出限幅
+    uint8 Integrate_Separation_Flag; // 积分分离标志
+    uint8 Err_Limit_Flag;       // 偏差限幅标志
+} PID_Controler;</code></pre>
+                    </div>
+
+                    <h3>电机混控布局</h3>
+                    <figure class="project-figure">
+                        <img src="images/drone-motor-mix.svg" alt="四电机混控布局">
+                        <figcaption>四电机 X 型布局与混控逻辑</figcaption>
+                    </figure>
+
+                    <h2>自主飞行与导航</h2>
+                    <p>飞控支持多种自主飞行模式，通过 SDK 接口实现"搭积木式"编程，用户组合基本动作即可实现复杂航线。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>C - 偏航控制模式</span>
+                        </div>
+                        <pre><code>enum YAW_CTRL_MODE {
+    ROTATE = 0,           // 手动偏航（遥控器控制）
+    AZIMUTH = 1,          // 绝对偏航角控制
+    CLOCKWISE = 2,        // 顺时针旋转指定角度
+    ANTI_CLOCKWISE = 3,   // 逆时针旋转指定角度
+    CLOCKWISE_TURN = 4,   // 顺时针角速度控制
+    ANTI_CLOCKWISE_TURN = 5 // 逆时针角速度控制
+};</code></pre>
+                    </div>
+
+                    <h2>落地成果</h2>
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-number">1000<small>Hz</small></span>
+                            <span class="result-label">IMU 采样率</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">200<small>Hz</small></span>
+                            <span class="result-label">姿态控制频率</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">20<small>个</small></span>
+                            <span class="result-label">PID 控制器</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">95<small>%+</small></span>
+                            <span class="result-label">目标识别准确率</span>
+                        </div>
+                    </div>
+
+                    <h2>项目资源</h2>
+                    <ul class="resource-list">
+                        <li><strong>飞控固件：</strong> CarryPilot V6.0.2（基于 TI Tiva C Series TM4C123GH6PM）</li>
+                        <li><strong>视觉方案：</strong> OpenMV H7 (MicroPython) + K210 (MaixPy + YOLOv2)</li>
+                        <li><strong>地面站：</strong> NCLink V1.0.6</li>
+                        <li><strong>开发环境：</strong> Keil MDK µVision 5</li>
+                    </ul>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Ezebr. 构筑于星辰与代码之上。</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

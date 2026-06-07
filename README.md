@@ -1,21 +1,22 @@
-# Ezebr | 高级开发者作品集
+# Ezebr | 个人开发作品集
 
 个人作品集网站，展示全栈开发项目与技术能力。
 
 ## 项目结构
 
 ```
-├── index.html          # 主页
-├── project-1.html      # 项目详情页 1
-├── project-2.html      # 项目详情页 2
-├── project-3.html      # 项目详情页 3
+├── index.html              # 主页
+├── project-drone.html      # 无人机飞控系统项目
+├── project-1.html          # 智能家居项目
+├── project-2.html          # 边缘计算数据网关项目
+├── project-3.html          # 云原生设备管理平台项目
 ├── css/
-│   ├── style.css       # 主样式
-│   └── project.css     # 项目页样式
+│   ├── style.css           # 主样式
+│   └── project.css         # 项目页样式
 ├── js/
-│   └── main.js         # 主脚本
-├── images/             # 图片资源
-└── projects/           # 项目资源
+│   └── main.js             # 主脚本
+├── images/                 # 图片资源 (SVG 图表)
+└── doc/                    # 项目文档
 ```
 
 ## 技术栈

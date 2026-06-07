@@ -219,8 +219,112 @@
     letter-spacing: 1px;
 }
 
+/* Specs Table */
+.specs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.specs-table th,
+.specs-table td {
+    padding: 1rem 1.2rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-glass);
+    color: var(--text-muted);
+}
+
+.specs-table th {
+    background: rgba(0, 240, 255, 0.05);
+    color: var(--primary);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+}
+
+.specs-table tr:last-child td {
+    border-bottom: none;
+}
+
+.specs-table tr:hover td {
+    background: rgba(0, 240, 255, 0.03);
+}
+
+/* Code Block */
+.code-block {
+    margin: 2rem 0;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-glass);
+}
+
+.code-header {
+    padding: 0.8rem 1.2rem;
+    background: rgba(0, 240, 255, 0.05);
+    border-bottom: 1px solid var(--border-glass);
+    color: var(--primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.code-block pre {
+    margin: 0;
+    padding: 1.5rem;
+    overflow-x: auto;
+}
+
+.code-block code {
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* Project Subtitle */
+.project-subtitle {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    font-style: italic;
+}
+
+/* Resource List */
+.resource-list {
+    list-style: none;
+    padding: 0;
+}
+
+.resource-list li {
+    padding: 1rem 1.5rem;
+    margin-bottom: 0.8rem;
+    background: rgba(0, 240, 255, 0.03);
+    border-radius: 8px;
+    border-left: 3px solid var(--primary);
+}
+
+.resource-list li strong {
+    color: var(--primary);
+}
+
+/* Inline Code */
+code {
+    background: rgba(0, 240, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9em;
+    color: var(--primary);
+}
+
 @media (max-width: 768px) {
     .project-article { padding: 1.5rem; }
     .project-header h1 { font-size: 2.2rem; }
     .results { grid-template-columns: 1fr; }
+    .specs-table { font-size: 0.9rem; }
+    .specs-table th, .specs-table td { padding: 0.8rem; }
 }

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="motorGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EF4444;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="200" y="35" text-anchor="middle" fill="#1F2937" font-size="18" font-weight="bold">四电机混控布局</text>
+  
+  <!-- 机架中心 -->
+  <circle cx="200" cy="200" r="30" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-dasharray="5,5"/>
+  <text x="200" y="205" text-anchor="middle" fill="#6B7280" font-size="12">中心</text>
+  
+  <!-- 机架臂 -->
+  <line x1="200" y1="170" x2="120" y2="90" stroke="#9CA3AF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="170" x2="280" y2="90" stroke="#9CA3AF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="230" x2="120" y2="310" stroke="#9CA3AF" stroke-width="4" stroke-linecap="round"/>
+  <line x1="200" y1="230" x2="280" y2="310" stroke="#9CA3AF" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- FRONT 标识 -->
+  <text x="200" y="65" text-anchor="middle" fill="#4B5563" font-size="14" font-weight="bold">FRONT</text>
+  <polygon points="200,70 195,80 205,80" fill="#4B5563"/>
+  
+  <!-- 电机 3 (CCW) - 左前 -->
+  <circle cx="120" cy="90" r="35" fill="url(#motorGrad)" filter="url(#glow)"/>
+  <text x="120" y="85" text-anchor="middle" fill="white" font-size="16" font-weight="bold">M3</text>
+  <text x="120" y="102" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="11">CCW</text>
+  
+  <!-- 电机 1 (CW) - 右前 -->
+  <circle cx="280" cy="90" r="35" fill="url(#motorGrad)" filter="url(#glow)"/>
+  <text x="280" y="85" text-anchor="middle" fill="white" font-size="16" font-weight="bold">M1</text>
+  <text x="280" y="102" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="11">CW</text>
+  
+  <!-- 电机 2 (CW) - 左后 -->
+  <circle cx="120" cy="310" r="35" fill="url(#motorGrad)" filter="url(#glow)"/>
+  <text x="120" y="305" text-anchor="middle" fill="white" font-size="16" font-weight="bold">M2</text>
+  <text x="120" y="322" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="11">CW</text>
+  
+  <!-- 电机 4 (CCW) - 右后 -->
+  <circle cx="280" cy="310" r="35" fill="url(#motorGrad)" filter="url(#glow)"/>
+  <text x="280" y="305" text-anchor="middle" fill="white" font-size="16" font-weight="bold">M4</text>
+  <text x="280" y="322" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="11">CCW</text>
+  
+  <!-- 混控公式 -->
+  <rect x="80" y="360" width="240" height="35" rx="8" fill="#1F2937"/>
+  <text x="200" y="383" text-anchor="middle" fill="white" font-size="13">输出 = 油门 ± Roll ± Pitch ± Yaw</text>
+</svg>
