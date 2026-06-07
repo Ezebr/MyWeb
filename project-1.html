@@ -3,39 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能家居系统 - 项目详情</title>
+    <title>智能家居中枢控制系统 | Ezebr</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/project.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
 </head>
 <body>
     <nav class="navbar">
         <div class="container">
-            <a href="index.html" class="logo">Portfolio</a>
+            <a href="index.html" class="logo">EZE<span>BR</span></a>
             <ul class="nav-links">
-                <li><a href="index.html#home">首页</a></li>
-                <li><a href="index.html#projects">项目</a></li>
-                <li><a href="index.html#skills">技能</a></li>
-                <li><a href="index.html#about">关于</a></li>
-                <li><a href="index.html#contact">联系</a></li>
+                <li><a href="index.html#projects">返回项目列表</a></li>
             </ul>
-            <button class="hamburger" aria-label="菜单">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
         </div>
     </nav>
 
     <main class="project-detail">
         <div class="container">
-            <a href="index.html#projects" class="back-link">&larr; 返回项目列表</a>
+            <a href="index.html#projects" class="back-link"><i class="ph ph-arrow-left"></i> 返回首页</a>
             
             <article class="project-article">
                 <header class="project-header">
-                    <h1>智能家居系统</h1>
+                    <h1>智能家居中枢控制系统</h1>
                     <div class="project-meta">
-                        <span class="date">2024 年 3 月</span>
+                        <time>2023.08 - 2024.01</time>
                         <div class="tags">
                             <span>ESP32</span>
                             <span>MQTT</span>
@@ -44,95 +35,42 @@
                     </div>
                 </header>
 
-                <!-- 项目主图 -->
                 <figure class="project-figure">
-                    <img src="https://via.placeholder.com/1200x600/2563eb/ffffff?text=智能家居系统" alt="智能家居系统">
-                    <figcaption>系统整体架构图</figcaption>
+                    <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="智能家居项目封面">
+                    <figcaption>基于 ESP32 的核心硬件控制面板</figcaption>
                 </figure>
 
-                <!-- 项目内容 -->
                 <div class="project-content">
-                    <h2>项目简介</h2>
-                    <p>这是一个基于 ESP32 的智能家居控制系统，用户可以通过手机 App 远程控制家中的各种设备，如灯光、窗帘、空调等。系统支持自动化场景设置，可以根据时间、传感器数据等条件自动执行预设操作。</p>
+                    <h2>项目背景</h2>
+                    <p>随着物联网技术的普及，传统智能家居方案存在响应延迟高、数据隐私堪忧（强依赖公有云）等问题。本项目旨在打造一个完全基于本地局域网的高性能中枢控制系统，确保毫秒级的控制响应，同时实现数据的绝对安全与本地化存储。</p>
 
-                    <h2>主要功能</h2>
+                    <div class="challenge">
+                        <h3>核心挑战</h3>
+                        <p>在资源受限的微控制器（MCU）上实现高并发的 WebSocket 连接与稳定不掉线的 MQTT 报文处理，同时需保证系统在断网情况下的全功能独立运行。</p>
+                    </div>
+
+                    <h2>解决方案与架构</h2>
+                    <p>系统采用“边缘中枢+分布节点”的架构。主控采用 ESP32 芯片，运行定制的 FreeRTOS 系统，通过 MQTT 协议与各个子节点进行低延迟通信。</p>
+                    
                     <ul>
-                        <li>远程控制：通过 MQTT 协议实现设备的远程控制</li>
-                        <li>传感器数据采集：温度、湿度、光照等环境数据实时监测</li>
-                        <li>自动化场景：支持基于时间和传感器数据的自动化控制</li>
-                        <li>设备管理：设备添加、删除、分组管理</li>
-                        <li>数据可视化：历史数据图表展示</li>
+                        <li><strong>通信层：</strong> 引入自适应心跳保活机制，确保 WebSocket 和 MQTT 的长连接稳定性。</li>
+                        <li><strong>控制层：</strong> 本地化场景引擎，支持基于时间、传感器状态的多条件触发规则。</li>
+                        <li><strong>交互层：</strong> 采用 React 开发的响应式 Web 面板，通过 WebSocket 直接与主控握手，实现无感刷新。</li>
                     </ul>
 
-                    <h2>技术架构</h2>
-                    <div class="architecture-diagram">
-                        <img src="https://via.placeholder.com/800x400/e2e8f0/1e293b?text=架构图" alt="技术架构">
-                    </div>
-
-                    <h3>硬件层</h3>
-                    <p>使用 ESP32 作为主控芯片，连接各种传感器和执行器。ESP32 具有 WiFi 和蓝牙功能，可以方便地接入网络。</p>
-
-                    <h3>通信层</h3>
-                    <p>采用 MQTT 协议进行设备与服务器之间的通信。MQTT 是一种轻量级的消息传输协议，非常适合物联网场景。</p>
-
-                    <h3>服务层</h3>
-                    <p>后端使用 Go 语言开发，负责设备管理、消息转发、数据存储等功能。数据库使用 MySQL 存储设备信息和历史数据。</p>
-
-                    <h3>应用层</h3>
-                    <p>前端使用 React 开发，提供友好的用户界面。支持 Web 和移动端访问。</p>
-
-                    <!-- 视频展示 -->
-                    <h2>演示视频</h2>
-                    <div class="video-container">
-                        <iframe 
-                            src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
-                            title="项目演示视频"
-                            frameborder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                            allowfullscreen>
-                        </iframe>
-                    </div>
-
-                    <!-- 图片画廊 -->
-                    <h2>项目截图</h2>
-                    <div class="image-gallery">
-                        <figure>
-                            <img src="https://via.placeholder.com/600x400/7c3aed/ffffff?text=App界面1" alt="App界面1">
-                            <figcaption>移动端控制界面</figcaption>
-                        </figure>
-                        <figure>
-                            <img src="https://via.placeholder.com/600x400/059669/ffffff?text=App界面2" alt="App界面2">
-                            <figcaption>数据可视化界面</figcaption>
-                        </figure>
-                        <figure>
-                            <img src="https://via.placeholder.com/600x400/dc2626/ffffff?text=硬件实物" alt="硬件实物">
-                            <figcaption>硬件设备实物图</figcaption>
-                        </figure>
-                    </div>
-
-                    <h2>遇到的挑战与解决方案</h2>
-                    <div class="challenge">
-                        <h3>挑战 1：设备稳定性</h3>
-                        <p>ESP32 在长时间运行后偶尔会出现掉线问题。通过添加看门狗机制和自动重连逻辑解决了这个问题。</p>
-                    </div>
-                    <div class="challenge">
-                        <h3>挑战 2：消息延迟</h3>
-                        <p>在设备数量较多时，MQTT 消息出现延迟。通过优化 QoS 等级和使用消息队列解决了这个问题。</p>
-                    </div>
-
-                    <h2>项目成果</h2>
+                    <h2>落地成果</h2>
                     <div class="results">
                         <div class="result-item">
+                            <span class="result-number">15<small>ms</small></span>
+                            <span class="result-label">平均指令延迟</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">99.9<small>%</small></span>
+                            <span class="result-label">局域网可用性</span>
+                        </div>
+                        <div class="result-item">
                             <span class="result-number">50+</span>
-                            <span class="result-label">支持设备数</span>
-                        </div>
-                        <div class="result-item">
-                            <span class="result-number">99.5%</span>
-                            <span class="result-label">系统稳定性</span>
-                        </div>
-                        <div class="result-item">
-                            <span class="result-number">&lt;100ms</span>
-                            <span class="result-label">控制延迟</span>
+                            <span class="result-label">稳定连接节点</span>
                         </div>
                     </div>
                 </div>
@@ -142,7 +80,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 你的名字. All rights reserved.</p>
+            <p>&copy; 2024 Ezebr. 构筑于星辰与代码之上。</p>
         </div>
     </footer>
 

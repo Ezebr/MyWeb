@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>云原生设备管理平台 | Ezebr</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/project.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">EZE<span>BR</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html#projects">返回项目列表</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="project-detail">
+        <div class="container">
+            <a href="index.html#projects" class="back-link"><i class="ph ph-arrow-left"></i> 返回首页</a>
+            
+            <article class="project-article">
+                <header class="project-header">
+                    <h1>云原生设备管理平台</h1>
+                    <div class="project-meta">
+                        <time>2021.05 - 2022.03</time>
+                        <div class="tags">
+                            <span>Vue 3</span>
+                            <span>Node.js</span>
+                            <span>Docker</span>
+                        </div>
+                    </div>
+                </header>
+
+                <figure class="project-figure">
+                    <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="管理平台项目">
+                    <figcaption>3D 设备资产可视化管理大屏</figcaption>
+                </figure>
+
+                <div class="project-content">
+                    <h2>项目背景</h2>
+                    <p>面对分布在全国各地的百万级终端设备，传统的管理后台在数据量级庞大时面临崩溃、响应迟缓以及无法直观展示空间数据的问题。我们需要构建一个具备高扩展性的大型云原生可视化平台。</p>
+
+                    <div class="challenge">
+                        <h3>核心挑战</h3>
+                        <p>解决前端海量 DOM 节点渲染导致的性能瓶颈；实现服务端针对百万级设备并发状态更新的毫秒级推送引擎。</p>
+                    </div>
+
+                    <h2>解决方案与架构</h2>
+                    <p>前后端彻底分离，全面拥抱云原生架构。后端基于 Node.js 微服务化，前端使用 Vue 3 结合 WebGL 技术构建 3D 可视化大屏。</p>
+                    
+                    <ul>
+                        <li><strong>微服务架构：</strong> 将设备接入、规则引擎、报警模块拆分为独立服务，通过 Docker 与 Kubernetes 实现自动化扩缩容。</li>
+                        <li><strong>千万级数据推送：</strong> 基于 Redis Pub/Sub 与 WebSocket 集群，实现海量设备状态变更的实时下发。</li>
+                        <li><strong>3D 数据可视化：</strong> 引入 Three.js，通过解析 CAD 图纸在浏览器中重构工厂三维模型，实现报警节点的空间定位。</li>
+                    </ul>
+
+                    <h2>落地成果</h2>
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-number">100<small>W+</small></span>
+                            <span class="result-label">设备并发接入</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">60<small>FPS</small></span>
+                            <span class="result-label">大屏渲染帧率</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">0.5<small>s</small></span>
+                            <span class="result-label">报警响应时间</span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Ezebr. 构筑于星辰与代码之上。</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
