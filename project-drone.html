@@ -50,7 +50,7 @@
                         <h3>核心要求</h3>
                         <ul>
                             <li>巡查前在地面站设置<strong>3 个禁飞区</strong>，规划覆盖所有非禁飞区方格的航线</li>
-                            <li>无人机从红色起飞区起飞，在 <strong>120±10cm 高度</strong>按航线巡查，<strong>300 秒内</strong>完成</li>
+                            <li>无人机从红色起飞区起飞，在 <strong>120±10cm 高度</strong>按航线巡查，<strong>500 秒内</strong>完成</li>
                             <li>发现动物时识别种类及数量，将方格代码、动物名称及数量发送到地面站</li>
                             <li>发挥部分：用机载激光笔光斑照射动物体态轮廓</li>
                         </ul>
@@ -285,50 +285,69 @@ while True:
                     </div>
 
                     <h3>三、飞控端遍历算法设计</h3>
-                    <p>设计了基于<strong>贪心算法</strong>的全覆盖路径规划，结合<strong>螺旋逼近死角 + BFS返航扫尾</strong>策略，实现 9×7 网格地图的全覆盖巡查，同时避开 3 个禁飞区。</p>
+                    <p>设计了基于<strong>贪心最近邻策略</strong>的全覆盖路径规划算法，在 9×7 网格地图上遍历所有可通行格子，同时避开 3 个禁飞区，最终返回起点。算法核心为：每步用<strong>曼哈顿距离</strong>筛选最近的未访问目标点，再用 <strong>BFS</strong> 计算实际最短路径。</p>
 
                     <figure class="project-figure">
                         <img src="images/drone-path-planning.svg" alt="路径规划算法">
-                        <figcaption>贪心算法 + 螺旋逼近死角 + BFS 返航扫尾示意图</figcaption>
+                        <figcaption>贪心最近邻覆盖路径规划示意图（9×7 网格，含 3 个禁飞区）</figcaption>
                     </figure>
+
+                    <div class="challenge">
+                        <h3>算法思路</h3>
+                        <ul>
+                            <li><strong>Step 1 — 收集目标点：</strong>遍历网格，排除禁飞区后得到所有可通行格子的坐标列表</li>
+                            <li><strong>Step 2 — 贪心选择：</strong>从当前位置出发，用曼哈顿距离 (|Δr|+|Δc|) 在所有未访问目标中选出最近点</li>
+                            <li><strong>Step 3 — BFS 寻路：</strong>用 BFS 在网格上计算当前位置到目标点的实际最短路径（绕开禁飞区），将方向序列写入路径数组</li>
+                            <li><strong>Step 4 — 回到起点：</strong>所有目标点访问完毕后，BFS 计算返回起始点 (6,8) 的最短路径</li>
+                        </ul>
+                    </div>
 
                     <div class="code-block">
                         <div class="code-header">
-                            <span>C - 贪心路径规划算法 (Route patrol.c)</span>
+                            <span>C - 贪心最近邻选择</span>
                         </div>
-                        <pre><code>// 四方向：上、下、左、右
-static int  DX[4]   = {-1, 1, 0, 0};
-static int  DY[4]   = { 0, 0,-1, 1};
-static char DIRC[4] = {'U','D','L','R'};
-
-// 贪心选择：从当前格找最近的可走邻居
-static int greedy_next(const int m[MAP_HEIGHT][MAP_WIDTH],
-                       int cr, int cc, int *nr, int *nc)
-{
-    int best_dist = 999;
-    int best_r = -1, best_c = -1;
-    for (int k = 0; k < 4; ++k) {
-        int r = cr + DX[k], c = cc + DY[k];
-        if (!passable(r, c, m)) continue;
-        int dist = abs(r - cr) + abs(c - cc);
-        if (dist < best_dist) {
-            best_dist = dist;
-            best_r = r; best_c = c;
-        }
-    }
-    *nr = best_r; *nc = best_c;
-    return (best_r >= 0) ? 0 : -1;
+                        <pre><code>// 计算曼哈顿距离（启发式估价）
+static int manhattan_distance(int r1, int c1, int r2, int c2) {
+    return abs(r1 - r2) + abs(c1 - c2);
 }
 
-// BFS 最短路径（返航扫尾用）
+// 贪心算法选择下一个最近的目标点
+static int find_nearest_unvisited(const int m[MAP_HEIGHT][MAP_WIDTH],
+                                   int cr, int cc,
+                                   const int targets_r[], const int targets_c[],
+                                   int visited[], int target_count,
+                                   int *next_idx)
+{
+    int best_idx = -1;
+    int best_dist = INT_MAX;
+
+    for (int i = 0; i < target_count; i++) {
+        if (visited[i]) continue;
+        int dist = manhattan_distance(cr, cc, targets_r[i], targets_c[i]);
+        if (dist < best_dist) {
+            best_dist = dist;
+            best_idx = i;
+        }
+    }
+
+    *next_idx = best_idx;
+    return best_idx >= 0;
+}</code></pre>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>C - BFS 最短路径计算</span>
+                        </div>
+                        <pre><code>// BFS 最短路：从 (sr,sc) 到 (tr,tc)，返回步数，路径写入 out_dir
 static int bfs_shortest(const int m[MAP_HEIGHT][MAP_WIDTH],
                         int sr, int sc, int tr, int tc, char *out_dir)
 {
     if (sr == tr && sc == tc) return 0;
 
-    static int  qx[MAP_HEIGHT * MAP_WIDTH];
-    static int  qy[MAP_HEIGHT * MAP_WIDTH];
-    static bool vis[MAP_HEIGHT][MAP_WIDTH];
+    static int qx[MAP_HEIGHT * MAP_WIDTH];
+    static int qy[MAP_HEIGHT * MAP_WIDTH];
+    static int vis[MAP_HEIGHT][MAP_WIDTH];
     static char pre_dir[MAP_HEIGHT][MAP_WIDTH];
 
     memset(vis, 0, sizeof(vis));
@@ -336,23 +355,25 @@ static int bfs_shortest(const int m[MAP_HEIGHT][MAP_WIDTH],
 
     int front = 0, rear = 0;
     qx[rear] = sr; qy[rear] = sc; rear++;
-    vis[sr][sc] = true;
+    vis[sr][sc] = 1;
 
-    bool found = false;
+    int found = 0;
     while (front < rear) {
         int r = qx[front], c = qy[front]; front++;
         for (int k = 0; k < 4; ++k) {
             int nr = r + DX[k], nc = c + DY[k];
             if (!passable(nr, nc, m) || vis[nr][nc]) continue;
-            vis[nr][nc] = true;
+            vis[nr][nc] = 1;
             pre_dir[nr][nc] = DIRC[k];
             qx[rear] = nr; qy[rear] = nc; rear++;
-            if (nr == tr && nc == tc) { found = true; goto DONE; }
+            if (nr == tr && nc == tc) { found = 1; break; }
         }
+        if (found) break;
     }
-DONE:
+
     if (!found) return -1;
 
+    // 回溯并反转得到正向路径
     char tmp[MAP_HEIGHT * MAP_WIDTH];
     int len = 0;
     int cr = tr, cc = tc;
@@ -364,66 +385,74 @@ DONE:
         else if (d == 'L') cc += 1;
         else if (d == 'R') cc -= 1;
     }
-    for (int i = 0; i < len; ++i)
-        out_dir[i] = tmp[len - 1 - i];
-
+    for (int i = 0; i < len; ++i) out_dir[i] = tmp[len - 1 - i];
     return len;
 }</code></pre>
                     </div>
 
                     <div class="code-block">
                         <div class="code-header">
-                            <span>C - 螺旋遍历 + BFS 返航扫尾</span>
+                            <span>C - 主流程：贪心覆盖 + 返回起点</span>
                         </div>
-                        <pre><code>// 生成贪心覆盖路径：螺旋遍历主路径 + BFS 扫尾死角 + 返回起点
-int build_cover_path_with_return(const int stop[3][2], int *out_steps, int max_steps)
+                        <pre><code>int build_cover_path_with_return_greedy(const int stop[3][2], int *out_steps, int max_steps)
 {
+    // 构建地图，标记禁飞区
     int map[MAP_HEIGHT][MAP_WIDTH];
     memset(map, 0, sizeof(map));
     for (int i = 0; i < 3; ++i)
         map[stop[i][0]][stop[i][1]] = 1;
 
-    bool visited[MAP_HEIGHT][MAP_WIDTH];
-    memset(visited, 0, sizeof(visited));
+    const int SR = MAP_HEIGHT - 1;
+    const int SC = MAP_WIDTH - 1;
 
-    int total_len = 0;
-    int cr = MAP_HEIGHT - 1, cc = MAP_WIDTH - 1;
-    visited[cr][cc] = true;
-
-    // Phase 1: 贪心螺旋遍历 - 每次选择最近的未访问邻居
-    while (1) {
-        int next_r, next_c;
-        if (greedy_next(map, cr, cc, &next_r, &next_c) < 0)
-            break;
-        if (visited[next_r][next_c])
-            break;
-        visited[next_r][next_c] = true;
-        int dir = dir_to_code(cr, cc, next_r, next_c);
-        out_steps[total_len++] = dir;
-        cr = next_r; cc = next_c;
-    }
-
-    // Phase 2: BFS 返航扫尾 - 找未覆盖的死角并用 BFS 到达
-    for (int r = 0; r < MAP_HEIGHT; ++r) {
-        for (int c = 0; c < MAP_WIDTH; ++c) {
-            if (map[r][c] == 0 && !visited[r][c]) {
-                char seg[MAX_PATH];
-                int len = bfs_shortest(map, cr, cc, r, c, seg);
-                for (int k = 0; k < len; ++k)
-                    out_steps[total_len + k] = dirchar_to_code(seg[k]);
-                total_len += len;
-                cr = r; cc = c;
-                visited[r][c] = true;
+    // 收集所有可走的目标点
+    int targets_r[MAP_HEIGHT * MAP_WIDTH];
+    int targets_c[MAP_HEIGHT * MAP_WIDTH];
+    int target_count = 0;
+    for (int r = 0; r < MAP_HEIGHT; r++)
+        for (int c = 0; c < MAP_WIDTH; c++)
+            if (map[r][c] == 0) {
+                targets_r[target_count] = r;
+                targets_c[target_count] = c;
+                target_count++;
             }
-        }
+
+    int visited[MAP_HEIGHT * MAP_WIDTH];
+    memset(visited, 0, sizeof(visited));
+    visited[start_idx] = 1;
+    int total_len = 0;
+    int cr = SR, cc = SC;
+    int visited_count = 1;
+
+    // 贪心循环：每次选曼哈顿距离最近的未访问点，BFS 走过去
+    while (visited_count < target_count) {
+        int next_idx;
+        if (!find_nearest_unvisited(map, cr, cc, targets_r, targets_c,
+                                     visited, target_count, &next_idx))
+            break;
+
+        char seg[MAX_PATH];
+        int len = bfs_shortest(map, cr, cc,
+                               targets_r[next_idx], targets_c[next_idx], seg);
+        if (len < 0) { visited[next_idx] = 1; visited_count++; continue; }
+
+        for (int k = 0; k < len; k++)
+            out_steps[total_len + k] = dirchar_to_code(seg[k]);
+        total_len += len;
+        cr = targets_r[next_idx];
+        cc = targets_c[next_idx];
+        visited[next_idx] = 1;
+        visited_count++;
     }
 
-    // Phase 3: BFS 返回起点
-    char seg[MAX_PATH];
-    int len = bfs_shortest(map, cr, cc, MAP_HEIGHT-1, MAP_WIDTH-1, seg);
-    for (int k = 0; k < len; ++k)
-        out_steps[total_len + k] = dirchar_to_code(seg[k]);
-    total_len += len;
+    // BFS 返回起点 (6, 8)
+    if (!(cr == SR && cc == SC)) {
+        char seg[MAX_PATH];
+        int len = bfs_shortest(map, cr, cc, SR, SC, seg);
+        for (int k = 0; k < len; k++)
+            out_steps[total_len + k] = dirchar_to_code(seg[k]);
+        total_len += len;
+    }
 
     return total_len;
 }</code></pre>
@@ -475,7 +504,7 @@ int build_cover_path_with_return(const int stop[3][2], int *out_steps, int max_s
                         <li><strong>视觉方案：</strong> K210 (MaixPy + YOLO) + 20 帧投票策略</li>
                         <li><strong>机载计算：</strong> 树莓派 4B (ROS + SLAM + OpenCV)</li>
                         <li><strong>激光雷达：</strong> 乐动 DTOF 雷达感应器（SLAM 建图定位）</li>
-                        <li><strong>路径算法：</strong> 贪心算法 + 螺旋逼近死角 + BFS 返航扫尾</li>
+                        <li><strong>路径算法：</strong> 贪心最近邻 + BFS 最短路径 + 返回起点</li>
                         <li><strong>地面站：</strong> 触摸屏 + 蓝牙通信</li>
                         <li><strong>开发环境：</strong> Keil MDK µVision 5 + MaixPy IDE</li>
                     </ul>

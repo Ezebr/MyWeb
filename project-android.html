@@ -40,16 +40,25 @@
                 </header>
 
                 <figure class="project-figure">
-                    <img src="images/android-architecture.svg" alt="Android App 系统架构">
-                    <figcaption>Android 智能门锁配套 App · 三层通信架构</figcaption>
+                    <img src="Materials/Door_APP/APP首页.jpg" alt="Android App 首页">
+                    <figcaption>Android 智能门锁配套 App 首页界面</figcaption>
                 </figure>
 
                 <div class="project-content">
                     <h2>项目概述</h2>
                     <p>本 App 是 ESP32-P4 智能门锁的 Android 配套应用，基于 <strong>Eclipse Paho MQTT + OkHttp WebSocket + MJPEG 流解析</strong>，实现与智能门锁的实时双向通信、远程视频监控、语音对讲等功能。</p>
+                    
+                    <p><strong>我在项目中主要负责以下工作：</strong></p>
+                    <ul>
+                        <li>MQTT 通信模块的设计与实现，包括单例管理、多回调机制、主题订阅</li>
+                        <li>MJPEG 视频流的状态机解析与实时显示</li>
+                        <li>WebSocket 语音对讲功能的开发（16kHz PCM 实时推流）</li>
+                        <li>临时通行证 QR 码生成与管理系统</li>
+                        <li>MQTT+HTTP 桥接模式实现照片获取</li>
+                    </ul>
 
                     <div class="challenge">
-                        <h3>三层通信设计</h3>
+                        <h3>三层通信架构</h3>
                         <table class="specs-table">
                             <thead>
                                 <tr>
@@ -102,209 +111,184 @@
                         </div>
                     </div>
 
+                    <h2>进入页面与登录</h2>
+                    <p>App 启动后进入登录界面，用户输入账号密码进行身份验证。系统支持<strong>记住密码</strong>功能，通过 SharedPreferences 持久化存储登录信息，下次启动时自动填充。</p>
+
+                    <figure class="project-figure">
+                        <img src="Materials/Door_APP/进入页面.jpg" alt="登录页面">
+                        <figcaption>App 登录页面界面</figcaption>
+                    </figure>
+
+                    <p><strong>登录流程说明：</strong></p>
+                    <ul>
+                        <li><strong>输入验证：</strong>检查用户名和密码是否为空，为空时显示错误提示</li>
+                        <li><strong>记住密码：</strong>勾选后将登录信息保存到 SharedPreferences，下次自动填充</li>
+                        <li><strong>MQTT 连接：</strong>登录成功后自动建立 MQTT 连接，订阅相关主题</li>
+                        <li><strong>页面跳转：</strong>验证通过后跳转到主控制界面</li>
+                    </ul>
+
                     <h2>MQTT 双向通信</h2>
-                    <p>采用<strong>单例模式</strong>管理全局唯一的 MQTT 连接，支持多 Activity 共享，QoS 1 保证至少送达一次。</p>
-
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>Java - MqttManager 单例</span>
-                        </div>
-                        <pre><code>public class MqttManager {
-    private static final String BROKER_URL = "tcp://47.108.29.157:1883";
-    private static final String CLIENT_ID = "SML_ESP32P4_Android_" + System.currentTimeMillis();
-
-    private static MqttManager instance;
-    private MqttAndroidClient mqttClient;
-    private boolean isConnected = false;
-    private List<MqttCallback> callbacks = new ArrayList<>();  // 多回调支持
-
-    public static synchronized MqttManager getInstance(Context context) {
-        if (instance == null) {
-            instance = new MqttManager(context);
-        }
-        return instance;
-    }
-}</code></pre>
-                    </div>
+                    <p>MQTT 是整个 App 的核心通信协议，采用<strong>单例模式</strong>管理全局唯一的连接实例，支持多个 Activity 共享同一个连接，QoS 1 保证消息至少送达一次。</p>
 
                     <h3>MQTT 主题设计</h3>
+                    <p>主题采用 <code>sml/</code> 命名空间，按功能分层设计，便于管理和扩展：</p>
+
                     <div class="challenge">
-                        <p>主题采用 <code>sml/</code> 命名空间，按功能分层：</p>
-                        <ul>
-                            <li><code>sml/pass/generate</code> — 通行证生成请求</li>
-                            <li><code>sml/pass/response</code> — 通行证响应</li>
-                            <li><code>sml/control/command</code> — 控制命令</li>
-                            <li><code>sml/control/status</code> — 设备状态</li>
-                            <li><code>sml/enroll/list</code> — 成员列表</li>
-                            <li><code>sml/enroll/delete</code> — 成员删除</li>
-                        </ul>
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>主题</th>
+                                    <th>方向</th>
+                                    <th>用途</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>sml/pass/generate</code></td>
+                                    <td>App → 设备</td>
+                                    <td>通行证生成请求</td>
+                                </tr>
+                                <tr>
+                                    <td><code>sml/pass/response</code></td>
+                                    <td>设备 → App</td>
+                                    <td>通行证响应结果</td>
+                                </tr>
+                                <tr>
+                                    <td><code>sml/control/command</code></td>
+                                    <td>App → 设备</td>
+                                    <td>控制命令（开锁、监控等）</td>
+                                </tr>
+                                <tr>
+                                    <td><code>sml/control/status</code></td>
+                                    <td>设备 → App</td>
+                                    <td>设备状态上报</td>
+                                </tr>
+                                <tr>
+                                    <td><code>sml/enroll/list</code></td>
+                                    <td>设备 → App</td>
+                                    <td>注册成员列表</td>
+                                </tr>
+                                <tr>
+                                    <td><code>sml/enroll/delete</code></td>
+                                    <td>App → 设备</td>
+                                    <td>删除成员请求</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
 
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>Java - 多回调机制</span>
-                        </div>
-                        <pre><code>private List<MqttCallback> callbacks = new ArrayList<>();
+                    <p><strong>多回调机制：</strong>为了支持多个 Activity 同时监听 MQTT 消息，我们设计了多回调列表机制。当消息到达时，系统会遍历所有注册的回调函数并依次调用，确保每个界面都能收到自己关心的消息。</p>
 
-mqttClient.setCallback(new MqttCallback() {
-    @Override
-    public void messageArrived(String topic, MqttMessage message) {
-        // 分发给所有注册的回调
-        for (MqttCallback cb : callbacks) {
-            cb.messageArrived(topic, message);
-        }
-    }
+                    <h2>数据库获取与成员管理</h2>
+                    <p>App 通过 MQTT 从 ESP32-P4 设备获取已注册的成员列表，包括成员的姓名、ID、注册时间等信息。用户可以查看成员详情、删除成员，所有操作通过 MQTT 实时同步到设备端。</p>
 
-    @Override
-    public void connectionLost(Throwable cause) {
-        isConnected = false;
-        for (MqttCallback cb : callbacks) {
-            cb.connectionLost(cause);
-        }
-    }
-});
+                    <figure class="project-figure">
+                        <img src="Materials/Door_APP/数据库获取.jpg" alt="数据库获取">
+                        <figcaption>成员列表与数据库获取</figcaption>
+                    </figure>
 
-// Activity 注册/注销回调
-public void addCallback(MqttCallback callback) {
-    if (!callbacks.contains(callback)) callbacks.add(callback);
-}
-public void removeCallback(MqttCallback callback) {
-    callbacks.remove(callback);
-}</code></pre>
-                    </div>
+                    <p><strong>成员管理功能：</strong></p>
+                    <ul>
+                        <li><strong>列表展示：</strong>以 RecyclerView 展示所有已注册成员，支持下拉刷新</li>
+                        <li><strong>成员详情：</strong>点击可查看成员的详细信息和注册照片</li>
+                        <li><strong>删除成员：</strong>长按可删除成员，操作通过 MQTT 同步到设备</li>
+                        <li><strong>照片获取：</strong>采用 MQTT+HTTP 桥接模式，解决 NAT 穿透问题</li>
+                    </ul>
 
-                    <h2>远程视频监控</h2>
-                    <p>通过 HTTP 长连接接收 MJPEG 流，使用<strong>自定义状态机</strong>解析帧边界，支持全屏横屏模式。</p>
+                    <h2>远程猫眼功能</h2>
+                    <p>远程猫眼是 App 的核心功能之一，通过 HTTP 长连接接收设备端摄像头的 MJPEG 视频流，实现远程实时查看门外情况。采用<strong>自定义状态机</strong>解析帧边界，支持全屏横屏模式。</p>
 
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>Java - MJPEG 流状态机解析</span>
-                        </div>
-                        <pre><code>private class MjpegRunner implements Runnable {
-    private static final int STATE_NEED_BOUNDARY = 0;   // 等待帧边界
-    private static final int STATE_NEED_HEADER_END = 1; // 等待头结束
-    private static final int STATE_READING_FRAME = 2;   // 读取 JPEG 数据
+                    <figure class="project-figure">
+                        <img src="Materials/Door_APP/远程猫眼.jpg" alt="远程猫眼">
+                        <figcaption>远程猫眼实时视频监控</figcaption>
+                    </figure>
 
-    @Override
-    public void run() {
-        HttpURLConnection conn = (HttpURLConnection) new URL(STREAM_URL).openConnection();
-        byte[] boundary = "frame".getBytes();
-        byte[] CRLFCRLF = "\r\n\r\n".getBytes();
-        byte[] buf = new byte[131072];  // 128KB 缓冲区
+                    <p><strong>视频流工作原理：</strong></p>
+                    <ol>
+                        <li><strong>MQTT 触发：</strong>App 通过 MQTT 发送 <code>monitor.start</code> 命令，通知设备开始推流</li>
+                        <li><strong>HTTP 连接：</strong>App 建立 HTTP 长连接到设备的 MJPEG 流地址</li>
+                        <li><strong>状态机解析：</strong>使用三状态状态机（等待边界→等待头结束→读取帧数据）解析 MJPEG 流</li>
+                        <li><strong>帧解码显示：</strong>将 JPEG 帧解码为 Bitmap 并在 ImageView 上实时显示</li>
+                        <li><strong>停止推流：</strong>退出时发送 <code>monitor.stop</code> 命令，断开 HTTP 连接</li>
+                    </ol>
 
-        int state = STATE_NEED_BOUNDARY;
+                    <p><strong>性能优化：</strong></p>
+                    <ul>
+                        <li><strong>128KB 缓冲区：</strong>使用大缓冲区减少系统调用次数，提高解析效率</li>
+                        <li><strong>硬件解码：</strong>利用 Android 硬件加速解码 JPEG，降低 CPU 占用</li>
+                        <li><strong>全屏模式：</strong>支持横屏全屏查看，充分利用屏幕空间</li>
+                    </ul>
 
-        while (!mStopStream) {
-            int n = is.read(buf, total, buf.length - total);
-            total += n;
+                    <h2>查看详细记录</h2>
+                    <p>App 提供完整的访问日志查看功能，记录所有的门锁开启事件，包括时间、方式、用户信息等。用户可以按时间筛选、查看详情，方便追溯和管理。</p>
 
-            // 状态机：在缓冲区中搜索边界和帧数据
-            while (searchFrom <= total - boundary.length) {
-                int bi = indexOfBytes(buf, searchFrom, total, boundary);
+                    <figure class="project-figure">
+                        <img src="Materials/Door_APP/查看详细记录.jpg" alt="查看详细记录">
+                        <figcaption>访问日志详细记录</figcaption>
+                    </figure>
 
-                if (state == STATE_READING_FRAME) {
-                    // 找到下一个边界 → 当前帧结束
-                    byte[] jpg = Arrays.copyOfRange(buf, frameStart, bi - 2);
-                    decodeAndDisplay(jpg);  // 解码并显示
-                    state = STATE_NEED_BOUNDARY;
-                }
-
-                // 跳过 header，定位 JPEG 数据起始
-                int he = indexOfBytes(buf, searchFrom, total, CRLFCRLF);
-                frameStart = he + 4;
-                state = STATE_READING_FRAME;
-            }
-        }
-    }
-}</code></pre>
-                    </div>
-
-                    <h3>MQTT 控制视频流</h3>
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>Java - 视频流控制</span>
-                        </div>
-                        <pre><code>// 开启监控
-JSONObject cmd = new JSONObject();
-cmd.put("command", "monitor.start");
-mqttManager.sendControlCommand(cmd.toString(), callback);
-
-// 关闭监控
-cmd.put("command", "monitor.stop");
-mqttManager.sendControlCommand(cmd.toString(), callback);</code></pre>
-                    </div>
-
-                    <h2>WebSocket 语音对讲</h2>
-                    <p>支持<strong>按住说话（Push-to-Talk）</strong>，16kHz PCM 实时推流，与 ESP32 扬声器联动。</p>
-
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>Java - 按住说话 + WebSocket 推流</span>
-                        </div>
-                        <pre><code>private static final int AUDIO_SAMPLE_RATE = 16000;  // 16kHz，匹配 ESP32 扬声器
-private static final int AUDIO_CHUNK_MS = 100;        // 100ms 一帧
-private static final int AUDIO_CHUNK_BYTES = 3200;     // 1600 samples × 2 bytes
-
-private void startAudioRecording() {
-    // 1. 初始化 AudioRecord
-    mAudioRecord = new AudioRecord(
-        MediaRecorder.AudioSource.MIC,
-        AUDIO_SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
-        AudioFormat.ENCODING_PCM_16BIT, bufferSize);
-
-    // 2. 连接 WebSocket
-    OkHttpClient client = new OkHttpClient.Builder()
-        .connectTimeout(3, TimeUnit.SECONDS).build();
-    Request request = new Request.Builder()
-        .url("ws://47.108.29.157:5000/ws/phone_audio").build();
-    mAudioWs = client.newWebSocket(request, wsListener);
-
-    // 3. 启动录音+推流线程
-    mAudioRecord.startRecording();
-    mAudioThread = new Thread(this::audioStreamingLoop);
-    mAudioThread.start();
-}
-
-private void audioStreamingLoop() {
-    byte[] chunk = new byte[AUDIO_CHUNK_BYTES];
-    while (mIsRecording) {
-        int read = mAudioRecord.read(chunk, 0, AUDIO_CHUNK_BYTES);
-        if (read > 0 && mAudioWs != null) {
-            mAudioWs.send(ByteString.of(chunk));  // 二进制帧发送
-        }
-    }
-}</code></pre>
-                    </div>
+                    <p><strong>日志功能特点：</strong></p>
+                    <ul>
+                        <li><strong>时间排序：</strong>按时间倒序展示，最新的记录在最前面</li>
+                        <li><strong>多种筛选：</strong>支持按日期、开门方式（人脸/密码/远程/临时通行证）筛选</li>
+                        <li><strong>详情查看：</strong>点击可查看详细的开门记录，包括抓拍照片</li>
+                        <li><strong>照片加载：</strong>使用 Glide 库异步加载照片，支持缓存和占位图</li>
+                    </ul>
 
                     <h2>临时通行证系统</h2>
-                    <p>用户可通过 App 生成临时通行证 QR 码，设置有效期和使用次数，访客扫码即可开门。</p>
+                    <p>用户可通过 App 生成临时通行证 QR 码，设置有效期和使用次数，访客扫码即可开门。这是为访客、快递员等临时人员设计的便捷开门方式。</p>
 
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>Java - QR 码生成与保存</span>
-                        </div>
-                        <pre><code>// 使用 ZXing 生成 QR 码
-Bitmap qrBitmap = QRCodeUtils.createQRCodeBitmap(passData, 400, 400);
+                    <figure class="project-figure">
+                        <img src="Materials/Door_APP/获取临时通行证.jpg" alt="临时通行证">
+                        <figcaption>临时通行证 QR 码生成</figcaption>
+                    </figure>
 
-// 保存到相册
-ContentValues values = new ContentValues();
-values.put(MediaStore.Images.Media.DISPLAY_NAME, "pass_" + timestamp + ".jpg");
-values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-OutputStream out = getContentResolver().insert(uri, values);
-qrBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);</code></pre>
-                    </div>
+                    <p><strong>通行证功能说明：</strong></p>
+                    <ul>
+                        <li><strong>有效期设置：</strong>支持设置 1 小时、1 天、7 天、30 天等多种有效期</li>
+                        <li><strong>使用次数：</strong>支持设置单次使用或多次使用，满足不同场景需求</li>
+                        <li><strong>QR 码生成：</strong>使用 ZXing 库生成高清晰度 QR 码，支持保存到相册</li>
+                        <li><strong>MQTT 同步：</strong>通行证信息通过 MQTT 同步到设备，确保离线也能使用</li>
+                    </ul>
 
-                    <h2>MQTT+HTTP 桥接（照片获取）</h2>
-                    <p>照片获取采用<strong>MQTT 触发 + HTTP 获取</strong>的桥接模式，解决 ESP32-P4 无法被 App 直接访问的 NAT 穿透问题。</p>
+                    <h2>MQTT+HTTP 桥接模式</h2>
+                    <p>照片获取采用<strong>MQTT 触发 + HTTP 获取</strong>的桥接模式，解决了 ESP32-P4 无法被 App 直接访问的 NAT 穿透问题。</p>
 
                     <div class="challenge">
-                        <h3>桥接流程</h3>
-                        <ul>
-                            <li>App 通过 MQTT 发送 <code>sml/enroll/photo/get/{id}</code> 触发设备上传</li>
-                            <li>ESP32-P4 收到后将照片上传到 Flask 服务器</li>
-                            <li>ESP32-P4 通过 MQTT 回复 <code>sml/enroll/photo/resp/{id}</code></li>
-                            <li>App 收到响应后通过 HTTP GET 从 Flask 获取照片</li>
-                        </ul>
+                        <h3>桥接流程详解</h3>
+                        <ol>
+                            <li><strong>MQTT 触发：</strong>App 通过 MQTT 发送照片获取请求到设备</li>
+                            <li><strong>设备上传：</strong>ESP32-P4 收到请求后，将照片上传到 Flask 服务器</li>
+                            <li><strong>MQTT 响应：</strong>设备上传完成后，通过 MQTT 回复照片 URL</li>
+                            <li><strong>HTTP 获取：</strong>App 收到响应后，通过 HTTP GET 从 Flask 服务器获取照片</li>
+                        </ol>
+                    </div>
+
+                    <p><strong>设计优势：</strong></p>
+                    <ul>
+                        <li><strong>解决 NAT 穿透：</strong>不需要设备有公网 IP，通过云端服务器中转</li>
+                        <li><strong>可靠性高：</strong>MQTT 保证命令送达，HTTP 保证照片完整传输</li>
+                        <li><strong>扩展性好：</strong>可以轻松添加更多需要上传的资源类型</li>
+                    </ul>
+
+                    <h2>落地成果</h2>
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-number">3<small>层</small></span>
+                            <span class="result-label">通信架构</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">6<small>个</small></span>
+                            <span class="result-label">核心功能</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">MQTT</span>
+                            <span class="result-label">双向实时通信</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">10<small>FPS</small></span>
+                            <span class="result-label">视频监控帧率</span>
+                        </div>
                     </div>
 
                     <h2>技术栈</h2>
