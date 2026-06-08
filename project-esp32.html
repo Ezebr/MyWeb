@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32-P4 边缘 AI 智能门锁 | Ezebr</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/project.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">EZE<span>BR</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html#projects">返回项目列表</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="project-detail">
+        <div class="container">
+            <a href="index.html#projects" class="back-link"><i class="ph ph-arrow-left"></i> 返回首页</a>
+            
+            <article class="project-article">
+                <header class="project-header">
+                    <h1>ESP32-P4 边缘 AI 智能门锁</h1>
+                    <p class="project-subtitle">从模型训练到 FreeRTOS 多任务调度的完整边缘 AI 系统</p>
+                    <div class="project-meta">
+                        <time>嵌入式 AI 项目</time>
+                        <div class="tags">
+                            <span>ESP32-P4</span>
+                            <span>esp-dl</span>
+                            <span>MobileNetV1</span>
+                            <span>FreeRTOS</span>
+                            <span>MQTT</span>
+                            <span>语音交互</span>
+                        </div>
+                    </div>
+                </header>
+
+                <figure class="project-figure">
+                    <img src="images/esp32-system-architecture.svg" alt="ESP32-P4 系统架构">
+                    <figcaption>ESP32-P4 边缘 AI 智能门锁系统架构</figcaption>
+                </figure>
+
+                <div class="project-content">
+                    <h2>项目概述</h2>
+                    <p>基于 ESP32-P4 芯片，在端侧实现<strong>人脸检测→活体检测→人脸识别</strong>的完整流水线，配合 FreeRTOS 任务调度、WiFi 联网、MQTT 智能家居控制、语音交互等功能，构建一套完整的边缘 AI 系统。</p>
+                    
+                    <div class="challenge">
+                        <h3>核心特性</h3>
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>功能</th>
+                                    <th>实现方式</th>
+                                    <th>模型/算法</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>人脸检测</td>
+                                    <td>esp-dl CNN</td>
+                                    <td>量化 INT8 模型</td>
+                                </tr>
+                                <tr>
+                                    <td>活体检测</td>
+                                    <td>MobileNetV1 ×0.5</td>
+                                    <td>FP32→INT8 量化，~160KB</td>
+                                </tr>
+                                <tr>
+                                    <td>人脸识别</td>
+                                    <td>esp-dl 特征提取 + 余弦匹配</td>
+                                    <td>128 维特征向量</td>
+                                </tr>
+                                <tr>
+                                    <td>语音交互</td>
+                                    <td>WakeNet + 流式 ASR + LLM + TTS</td>
+                                    <td>ESP-SR + 火山引擎</td>
+                                </tr>
+                                <tr>
+                                    <td>智能家居</td>
+                                    <td>MQTT 协议</td>
+                                    <td>自建 Broker</td>
+                                </tr>
+                                <tr>
+                                    <td>远程监控</td>
+                                    <td>JPEG 硬件编码 + HTTP POST</td>
+                                    <td>10 FPS</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h2>边缘 AI 流水线</h2>
+                    <p>系统采用<strong>事件驱动的流水线架构</strong>，各阶段通过 FreeRTOS 队列连接，实现人脸检测→活体检测→人脸识别的完整链路。</p>
+
+                    <figure class="project-figure">
+                        <img src="images/esp32-ai-pipeline.svg" alt="边缘 AI 流水线">
+                        <figcaption>边缘 AI 流水线：人脸检测 → 活体检测 → 人脸识别</figcaption>
+                    </figure>
+
+                    <h3>活体检测（核心模块）</h3>
+                    <p>活体检测是防止照片/屏幕攻击的关键环节。采用 <strong>MobileNetV1 ×0.5</strong>（宽度乘数 0.5），约 37.6K 参数，INT8 量化后约 160KB。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>C++ - 活体检测接口 (LivenessCNN)</span>
+                        </div>
+                        <pre><code>namespace human_face_liveness {
+
+struct LivenessResult {
+    float live_probability;    // 真人概率
+    float spoof_probability;   // 攻击概率
+    bool is_live(float threshold) const { return live_probability >= threshold; }
+};
+
+class LivenessCNN {
+public:
+    LivenessCNN(const char *model_name);
+
+    // 输入：原始图像 + 人脸边界框
+    // 输出：活体检测结果
+    LivenessResult classify(const dl::image::img_t &img,
+                            const std::vector<int> &crop_area);
+
+private:
+    dl::Model *m_model;                         // esp-dl 模型
+    dl::image::ImagePreprocessor *m_image_preprocessor;  // 图像预处理
+};
+
+} // namespace human_face_liveness</code></pre>
+                    </div>
+
+                    <h3>推理流程</h3>
+                    <div class="challenge">
+                        <p>原始图像 (1024×600 RGB565) → 根据检测框裁剪人脸 → ImagePreprocessor: resize 96×96 → 归一化 → INT8 量化 → MobileNetV1 推理 (~40ms) → 输出 [P(spoof), P(live)] → 阈值判断</p>
+                    </div>
+
+                    <h2>活体检测模型训练</h2>
+
+                    <h3>数据增强策略</h3>
+                    <p>增强管线<strong>定向模拟 ESP32-P4 ISP 的实际行为</strong>，特别是 AWB（自动白平衡）漂移问题：</p>
+
+                    <div class="challenge">
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>增强</th>
+                                    <th>是否使用</th>
+                                    <th>原因</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>R 通道增益</td>
+                                    <td>✅</td>
+                                    <td>AWB R_gain 漂移是确认的根因</td>
+                                </tr>
+                                <tr>
+                                    <td>B 通道增益</td>
+                                    <td>✅</td>
+                                    <td>AWB B_gain 同步漂移</td>
+                                </tr>
+                                <tr>
+                                    <td>Hue 色相旋转</td>
+                                    <td>❌</td>
+                                    <td>色相旋转 ≠ AWB 通道增益，机制不同</td>
+                                </tr>
+                                <tr>
+                                    <td>Saturation 饱和度</td>
+                                    <td>❌</td>
+                                    <td>ISP ACC 模块不活跃</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Python - 数据增强 (定向模拟 ISP AWB 漂移)</span>
+                        </div>
+                        <pre><code>transform = transforms.Compose([
+    transforms.RandomHorizontalFlip(p=0.5),
+    transforms.ColorJitter(brightness=0.25, contrast=0.15),  # AE 活跃
+    # R/B 通道增益增强 — 模拟 AWB 漂移（根因）
+    RandomChannelGain(channel='R', range=(0.80, 1.50), p=0.35),
+    RandomChannelGain(channel='B', range=(0.80, 1.30), p=0.35),
+    transforms.GaussianBlur(kernel_size=3, sigma=(0.3, 0.8)),  # 运动/失焦
+    AddGaussianNoise(std=0.02),  # 传感器噪声
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+])</code></pre>
+                    </div>
+
+                    <h3>量化部署流程</h3>
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-number">FP32</span>
+                            <span class="result-label">PyTorch 训练</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">INT8</span>
+                            <span class="result-label">ESP-PPQ 量化</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">~160<small>KB</small></span>
+                            <span class="result-label">模型大小</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">~40<small>ms</small></span>
+                            <span class="result-label">单帧推理</span>
+                        </div>
+                    </div>
+
+                    <h2>FreeRTOS 多任务调度</h2>
+                    <p>ESP32-P4 为双核 RISC-V，任务按功能分配到不同核心：<strong>Core 1</strong> 运行 AI 推理，<strong>Core 0</strong> 运行 I/O 密集任务。</p>
+
+                    <div class="challenge">
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>任务</th>
+                                    <th>核心</th>
+                                    <th>栈深度</th>
+                                    <th>说明</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>WhoFetchNode</td>
+                                    <td>Core 0</td>
+                                    <td>4KB</td>
+                                    <td>摄像头帧采集</td>
+                                </tr>
+                                <tr>
+                                    <td>WhoDetect</td>
+                                    <td>Core 1</td>
+                                    <td>8KB</td>
+                                    <td>人脸检测 CNN 推理</td>
+                                </tr>
+                                <tr>
+                                    <td>WhoRecognitionCore</td>
+                                    <td>Core 1</td>
+                                    <td>8KB</td>
+                                    <td>人脸识别特征提取</td>
+                                </tr>
+                                <tr>
+                                    <td>WhoFrameLCD</td>
+                                    <td>Core 0</td>
+                                    <td>4KB</td>
+                                    <td>LCD 显示渲染</td>
+                                </tr>
+                                <tr>
+                                    <td>WhoRemoteMonitor</td>
+                                    <td>Core 0</td>
+                                    <td>8KB</td>
+                                    <td>JPEG 编码 + HTTP 上传</td>
+                                </tr>
+                                <tr>
+                                    <td>WiFi/MQTT</td>
+                                    <td>Core 0</td>
+                                    <td>4KB</td>
+                                    <td>网络通信</td>
+                                </tr>
+                                <tr>
+                                    <td>VoiceCmd</td>
+                                    <td>Core 0</td>
+                                    <td>16KB</td>
+                                    <td>语音唤醒 + ASR + LLM</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>C++ - 任务基类 (WhoTask)</span>
+                        </div>
+                        <pre><code>class WhoTaskBase {
+public:
+    // 事件标志位
+    static constexpr EventBits_t TASK_STOPPED = 1 << 0;
+    static constexpr EventBits_t TASK_PAUSED  = 1 << 1;
+    static constexpr EventBits_t TASK_STOP    = 1 << 2;
+    static constexpr EventBits_t TASK_PAUSE   = 1 << 3;
+    static constexpr EventBits_t TASK_RESUME  = 1 << 4;
+
+    // 生命周期控制
+    virtual bool run(configSTACK_DEPTH_TYPE uxStackDepth,
+                     UBaseType_t uxPriority, BaseType_t xCoreID);
+    virtual bool stop();
+    virtual bool pause();
+    virtual bool resume();
+
+protected:
+    virtual void task() = 0;        // 子类实现的任务主循环
+    EventGroupHandle_t m_event_group; // 状态同步事件组
+    TaskHandle_t m_task_handle;       // 任务句柄
+};</code></pre>
+                    </div>
+
+                    <h2>网络连接与智能家居</h2>
+
+                    <h3>WiFi 管理</h3>
+                    <p><code>WhoWifi</code> 采用<strong>单例模式</strong>，全局唯一，通过状态机管理连接生命周期，支持 NVS Flash 持久化配置和自动断线重连。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>C++ - WiFi 单例管理 (WhoWifi)</span>
+                        </div>
+                        <pre><code>class WhoWifi {
+public:
+    static WhoWifi *get_instance() {
+        static WhoWifi instance;
+        return &instance;
+    }
+
+    // 状态定义
+    typedef enum {
+        WIFI_STATE_INIT,          // 初始化
+        WIFI_STATE_DISCONNECTED,  // 已断开
+        WIFI_STATE_CONNECTING,    // 连接中
+        WIFI_STATE_CONNECTED,     // 已连接
+        WIFI_STATE_ERROR          // 错误
+    } WifiState_t;
+
+    esp_err_t init();                          // 初始化 WiFi 子系统
+    esp_err_t connect(const char *ssid, const char *password, bool save = true);
+    esp_err_t auto_connect();                  // 自动连接上次保存的 WiFi
+    bool wait_connected(uint32_t timeout_ms);  // 阻塞等待连接成功
+};</code></pre>
+                    </div>
+
+                    <h3>MQTT 智能家居</h3>
+                    <p>识别成功后通过 MQTT 上报事件（JSON 格式访问日志、Base64 抓拍照片），并支持远程控制命令。</p>
+
+                    <h2>调试历程与经验</h2>
+                    <div class="challenge">
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>版本</th>
+                                    <th>问题</th>
+                                    <th>根因</th>
+                                    <th>修复</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>V1</td>
+                                    <td>输出随机</td>
+                                    <td>ESP-PPQ Softmax 索引交换</td>
+                                    <td>交换 data[0]/data[1]</td>
+                                </tr>
+                                <tr>
+                                    <td>V2</td>
+                                    <td>真人被判假</td>
+                                    <td>预处理对齐不一致</td>
+                                    <td>统一预处理</td>
+                                </tr>
+                                <tr>
+                                    <td>V2.2</td>
+                                    <td>距离依赖漂移</td>
+                                    <td>ISP AWB 自动调节</td>
+                                    <td>亮度均值减法</td>
+                                </tr>
+                                <tr>
+                                    <td>V5</td>
+                                    <td>鲁棒性提升</td>
+                                    <td>R/B 通道增益增强</td>
+                                    <td>模拟 AWB 漂移</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="challenge">
+                        <h3>关键教训</h3>
+                        <ul>
+                            <li><strong>每次只改一个变量：</strong>V2 同时改了预处理和索引，真正根因被掩盖</li>
+                            <li><strong>增强要匹配硬件：</strong>ISP 不活跃的模块不需要增强，活跃的（AWB）要定向模拟</li>
+                            <li><strong>训练-推理一致性：</strong>裁剪方式、归一化方式必须完全一致</li>
+                        </ul>
+                    </div>
+
+                    <h2>落地成果</h2>
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-number">~160<small>KB</small></span>
+                            <span class="result-label">模型大小</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">~40<small>ms</small></span>
+                            <span class="result-label">推理延迟</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">10<small>FPS</small></span>
+                            <span class="result-label">远程监控帧率</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">双核</span>
+                            <span class="result-label">RISC-V 任务隔离</span>
+                        </div>
+                    </div>
+
+                    <h2>技术栈</h2>
+                    <ul class="resource-list">
+                        <li><strong>芯片：</strong> ESP32-P4（双核 RISC-V, 512KB SRAM）</li>
+                        <li><strong>开发框架：</strong> ESP-IDF v5.5.3</li>
+                        <li><strong>AI 推理：</strong> esp-dl ~3.2.0</li>
+                        <li><strong>活体模型：</strong> MobileNetV1 ×0.5, INT8 ~160KB</li>
+                        <li><strong>任务框架：</strong> FreeRTOS（事件驱动 + 任务组管理）</li>
+                        <li><strong>云服务：</strong> 火山引擎 ASR/LLM + 自建 MQTT Broker</li>
+                    </ul>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Ezebr. 构筑于星辰与代码之上。</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

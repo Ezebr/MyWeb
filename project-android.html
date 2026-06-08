@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android 智能门锁配套 App | Ezebr</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/project.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">EZE<span>BR</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html#projects">返回项目列表</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="project-detail">
+        <div class="container">
+            <a href="index.html#projects" class="back-link"><i class="ph ph-arrow-left"></i> 返回首页</a>
+            
+            <article class="project-article">
+                <header class="project-header">
+                    <h1>Android 智能门锁配套 App</h1>
+                    <p class="project-subtitle">MQTT 双向通信 · 远程视频监控 · WebSocket 语音对讲</p>
+                    <div class="project-meta">
+                        <time>ESP32-P4 配套应用</time>
+                        <div class="tags">
+                            <span>Android</span>
+                            <span>MQTT</span>
+                            <span>WebSocket</span>
+                            <span>MJPEG</span>
+                            <span>OkHttp</span>
+                            <span>ZXing</span>
+                        </div>
+                    </div>
+                </header>
+
+                <figure class="project-figure">
+                    <img src="images/android-architecture.svg" alt="Android App 系统架构">
+                    <figcaption>Android 智能门锁配套 App · 三层通信架构</figcaption>
+                </figure>
+
+                <div class="project-content">
+                    <h2>项目概述</h2>
+                    <p>本 App 是 ESP32-P4 智能门锁的 Android 配套应用，基于 <strong>Eclipse Paho MQTT + OkHttp WebSocket + MJPEG 流解析</strong>，实现与智能门锁的实时双向通信、远程视频监控、语音对讲等功能。</p>
+
+                    <div class="challenge">
+                        <h3>三层通信设计</h3>
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>层级</th>
+                                    <th>协议</th>
+                                    <th>用途</th>
+                                    <th>特点</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>控制层</strong></td>
+                                    <td>MQTT</td>
+                                    <td>门锁控制、通行证管理、成员管理</td>
+                                    <td>双向、实时、QoS 1</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>数据层</strong></td>
+                                    <td>HTTP REST</td>
+                                    <td>访问日志、照片获取</td>
+                                    <td>请求-响应、可靠</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>媒体层</strong></td>
+                                    <td>MJPEG + WebSocket</td>
+                                    <td>视频监控、语音对讲</td>
+                                    <td>流式、低延迟</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h2>App 功能模块</h2>
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-number">控制</span>
+                            <span class="result-label">门锁远程控制</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">监控</span>
+                            <span class="result-label">实时视频查看</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">对讲</span>
+                            <span class="result-label">WebSocket 语音</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">通行</span>
+                            <span class="result-label">QR 码临时通行</span>
+                        </div>
+                    </div>
+
+                    <h2>MQTT 双向通信</h2>
+                    <p>采用<strong>单例模式</strong>管理全局唯一的 MQTT 连接，支持多 Activity 共享，QoS 1 保证至少送达一次。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Java - MqttManager 单例</span>
+                        </div>
+                        <pre><code>public class MqttManager {
+    private static final String BROKER_URL = "tcp://47.108.29.157:1883";
+    private static final String CLIENT_ID = "SML_ESP32P4_Android_" + System.currentTimeMillis();
+
+    private static MqttManager instance;
+    private MqttAndroidClient mqttClient;
+    private boolean isConnected = false;
+    private List<MqttCallback> callbacks = new ArrayList<>();  // 多回调支持
+
+    public static synchronized MqttManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new MqttManager(context);
+        }
+        return instance;
+    }
+}</code></pre>
+                    </div>
+
+                    <h3>MQTT 主题设计</h3>
+                    <div class="challenge">
+                        <p>主题采用 <code>sml/</code> 命名空间，按功能分层：</p>
+                        <ul>
+                            <li><code>sml/pass/generate</code> — 通行证生成请求</li>
+                            <li><code>sml/pass/response</code> — 通行证响应</li>
+                            <li><code>sml/control/command</code> — 控制命令</li>
+                            <li><code>sml/control/status</code> — 设备状态</li>
+                            <li><code>sml/enroll/list</code> — 成员列表</li>
+                            <li><code>sml/enroll/delete</code> — 成员删除</li>
+                        </ul>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Java - 多回调机制</span>
+                        </div>
+                        <pre><code>private List<MqttCallback> callbacks = new ArrayList<>();
+
+mqttClient.setCallback(new MqttCallback() {
+    @Override
+    public void messageArrived(String topic, MqttMessage message) {
+        // 分发给所有注册的回调
+        for (MqttCallback cb : callbacks) {
+            cb.messageArrived(topic, message);
+        }
+    }
+
+    @Override
+    public void connectionLost(Throwable cause) {
+        isConnected = false;
+        for (MqttCallback cb : callbacks) {
+            cb.connectionLost(cause);
+        }
+    }
+});
+
+// Activity 注册/注销回调
+public void addCallback(MqttCallback callback) {
+    if (!callbacks.contains(callback)) callbacks.add(callback);
+}
+public void removeCallback(MqttCallback callback) {
+    callbacks.remove(callback);
+}</code></pre>
+                    </div>
+
+                    <h2>远程视频监控</h2>
+                    <p>通过 HTTP 长连接接收 MJPEG 流，使用<strong>自定义状态机</strong>解析帧边界，支持全屏横屏模式。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Java - MJPEG 流状态机解析</span>
+                        </div>
+                        <pre><code>private class MjpegRunner implements Runnable {
+    private static final int STATE_NEED_BOUNDARY = 0;   // 等待帧边界
+    private static final int STATE_NEED_HEADER_END = 1; // 等待头结束
+    private static final int STATE_READING_FRAME = 2;   // 读取 JPEG 数据
+
+    @Override
+    public void run() {
+        HttpURLConnection conn = (HttpURLConnection) new URL(STREAM_URL).openConnection();
+        byte[] boundary = "frame".getBytes();
+        byte[] CRLFCRLF = "\r\n\r\n".getBytes();
+        byte[] buf = new byte[131072];  // 128KB 缓冲区
+
+        int state = STATE_NEED_BOUNDARY;
+
+        while (!mStopStream) {
+            int n = is.read(buf, total, buf.length - total);
+            total += n;
+
+            // 状态机：在缓冲区中搜索边界和帧数据
+            while (searchFrom <= total - boundary.length) {
+                int bi = indexOfBytes(buf, searchFrom, total, boundary);
+
+                if (state == STATE_READING_FRAME) {
+                    // 找到下一个边界 → 当前帧结束
+                    byte[] jpg = Arrays.copyOfRange(buf, frameStart, bi - 2);
+                    decodeAndDisplay(jpg);  // 解码并显示
+                    state = STATE_NEED_BOUNDARY;
+                }
+
+                // 跳过 header，定位 JPEG 数据起始
+                int he = indexOfBytes(buf, searchFrom, total, CRLFCRLF);
+                frameStart = he + 4;
+                state = STATE_READING_FRAME;
+            }
+        }
+    }
+}</code></pre>
+                    </div>
+
+                    <h3>MQTT 控制视频流</h3>
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Java - 视频流控制</span>
+                        </div>
+                        <pre><code>// 开启监控
+JSONObject cmd = new JSONObject();
+cmd.put("command", "monitor.start");
+mqttManager.sendControlCommand(cmd.toString(), callback);
+
+// 关闭监控
+cmd.put("command", "monitor.stop");
+mqttManager.sendControlCommand(cmd.toString(), callback);</code></pre>
+                    </div>
+
+                    <h2>WebSocket 语音对讲</h2>
+                    <p>支持<strong>按住说话（Push-to-Talk）</strong>，16kHz PCM 实时推流，与 ESP32 扬声器联动。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Java - 按住说话 + WebSocket 推流</span>
+                        </div>
+                        <pre><code>private static final int AUDIO_SAMPLE_RATE = 16000;  // 16kHz，匹配 ESP32 扬声器
+private static final int AUDIO_CHUNK_MS = 100;        // 100ms 一帧
+private static final int AUDIO_CHUNK_BYTES = 3200;     // 1600 samples × 2 bytes
+
+private void startAudioRecording() {
+    // 1. 初始化 AudioRecord
+    mAudioRecord = new AudioRecord(
+        MediaRecorder.AudioSource.MIC,
+        AUDIO_SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO,
+        AudioFormat.ENCODING_PCM_16BIT, bufferSize);
+
+    // 2. 连接 WebSocket
+    OkHttpClient client = new OkHttpClient.Builder()
+        .connectTimeout(3, TimeUnit.SECONDS).build();
+    Request request = new Request.Builder()
+        .url("ws://47.108.29.157:5000/ws/phone_audio").build();
+    mAudioWs = client.newWebSocket(request, wsListener);
+
+    // 3. 启动录音+推流线程
+    mAudioRecord.startRecording();
+    mAudioThread = new Thread(this::audioStreamingLoop);
+    mAudioThread.start();
+}
+
+private void audioStreamingLoop() {
+    byte[] chunk = new byte[AUDIO_CHUNK_BYTES];
+    while (mIsRecording) {
+        int read = mAudioRecord.read(chunk, 0, AUDIO_CHUNK_BYTES);
+        if (read > 0 && mAudioWs != null) {
+            mAudioWs.send(ByteString.of(chunk));  // 二进制帧发送
+        }
+    }
+}</code></pre>
+                    </div>
+
+                    <h2>临时通行证系统</h2>
+                    <p>用户可通过 App 生成临时通行证 QR 码，设置有效期和使用次数，访客扫码即可开门。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Java - QR 码生成与保存</span>
+                        </div>
+                        <pre><code>// 使用 ZXing 生成 QR 码
+Bitmap qrBitmap = QRCodeUtils.createQRCodeBitmap(passData, 400, 400);
+
+// 保存到相册
+ContentValues values = new ContentValues();
+values.put(MediaStore.Images.Media.DISPLAY_NAME, "pass_" + timestamp + ".jpg");
+values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+OutputStream out = getContentResolver().insert(uri, values);
+qrBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out);</code></pre>
+                    </div>
+
+                    <h2>MQTT+HTTP 桥接（照片获取）</h2>
+                    <p>照片获取采用<strong>MQTT 触发 + HTTP 获取</strong>的桥接模式，解决 ESP32-P4 无法被 App 直接访问的 NAT 穿透问题。</p>
+
+                    <div class="challenge">
+                        <h3>桥接流程</h3>
+                        <ul>
+                            <li>App 通过 MQTT 发送 <code>sml/enroll/photo/get/{id}</code> 触发设备上传</li>
+                            <li>ESP32-P4 收到后将照片上传到 Flask 服务器</li>
+                            <li>ESP32-P4 通过 MQTT 回复 <code>sml/enroll/photo/resp/{id}</code></li>
+                            <li>App 收到响应后通过 HTTP GET 从 Flask 获取照片</li>
+                        </ul>
+                    </div>
+
+                    <h2>技术栈</h2>
+                    <ul class="resource-list">
+                        <li><strong>平台：</strong> Android (minSdk 24, targetSdk 36)</li>
+                        <li><strong>语言：</strong> Java 11</li>
+                        <li><strong>构建：</strong> Gradle Kotlin DSL</li>
+                        <li><strong>MQTT：</strong> Eclipse Paho MQTT Client 1.2.5</li>
+                        <li><strong>HTTP/WebSocket：</strong> OkHttp</li>
+                        <li><strong>QR 码：</strong> ZXing Core 3.5.1</li>
+                        <li><strong>图片加载：</strong> Glide 4.16.0</li>
+                        <li><strong>配套硬件：</strong> ESP32-P4 Function EV Board</li>
+                    </ul>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Ezebr. 构筑于星辰与代码之上。</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

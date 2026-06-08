@@ -29,20 +29,17 @@
                     <div class="project-meta">
                         <time>2025 全国大学生电子设计竞赛 (H 题)</time>
                         <div class="tags">
-                            <span>TM4C123</span>
                             <span>K210</span>
                             <span>树莓派</span>
                             <span>Linux</span>
-                            <span>ROS</span>
                             <span>YOLO</span>
-                            <span>BFS</span>
                         </div>
                     </div>
                 </header>
 
                 <figure class="project-figure">
-                    <img src="https://images.unsplash.com/photo-1473968512647-3e447244af8f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80" alt="无人机野生动物巡查系统">
-                    <figcaption>基于 TI TM4C123GH6PM + K210 + 树莓派4B 的多传感器融合飞控平台</figcaption>
+                    <img src="Materials/Drone/pic/首图.jpg" alt="无人机野生动物巡查系统">
+                    <figcaption>2025 全国大学生电子设计竞赛 H 题 · 野生动物巡查系统</figcaption>
                 </figure>
 
                 <div class="project-content">
@@ -130,11 +127,11 @@
                             <span class="result-label">核心工作模块</span>
                         </div>
                         <div class="result-item">
-                            <span class="result-number">95<small>%+</small></span>
+                            <span class="result-number">70<small>%+</small></span>
                             <span class="result-label">YOLO 识别准确率</span>
                         </div>
                         <div class="result-item">
-                            <span class="result-number">63<small>格</small></span>
+                            <span class="result-number">60<small>格</small></span>
                             <span class="result-label">全覆盖路径规划</span>
                         </div>
                     </div>
@@ -186,14 +183,14 @@
                     </figure>
 
                     <h3>二、视觉端 K210 模型训练与部署</h3>
-                    <p>针对 5 类野生动物（象、虎、狼、猴、孔雀）的检测需求，在 MaixHub 平台训练 YOLOv2 模型，并部署到 K210 的 KPU 神经网络加速器。</p>
+                    <p>针对 5 类野生动物（象、虎、狼、猴、孔雀）的检测需求，在勘智（Kendryte）平台训练 YOLOv2 模型，并部署到 K210 的 KPU 神经网络加速器。</p>
 
                     <div class="challenge">
                         <h3>模型训练流程</h3>
                         <ul>
-                            <li><strong>数据采集：</strong>拍摄 5 类动物图片各 100~200 张，包含不同角度、光照、背景</li>
-                            <li><strong>标注：</strong>在 MaixHub 平台用矩形框标注动物位置，标记类别</li>
-                            <li><strong>训练：</strong>选择 YOLOv2 模型，输入尺寸 320×240，训练 50~100 epochs</li>
+                            <li><strong>数据采集：</strong>拍摄 5 类动物图片各 100 张，包含不同角度、光照、背景</li>
+                            <li><strong>标注：</strong>在勘智平台用矩形框标注动物位置，标记类别</li>
+                            <li><strong>训练：</strong>选择 YOLO 模型，输入尺寸 240×320，训练 500 epochs</li>
                             <li><strong>导出：</strong>下载 <code>.kmodel</code> 格式模型文件（约 571KB）</li>
                         </ul>
                     </div>
@@ -202,7 +199,7 @@
                         <div class="code-header">
                             <span>Python - K210 YOLO 模型配置与推理 (K210main3.0.py)</span>
                         </div>
-                        <pre><code># YOLOv2 模型配置
+                        <pre><code># YOLO 模型配置
 labels = ["1", "2", "3", "4", "5"]
 anchor = (0.91, 1.05, 1.58, 0.63, 1.29, 0.87, 1.67, 1.69, 2.77, 1.03)
 
@@ -216,7 +213,15 @@ kpu.init_yolo2(
     layer_w=10, layer_h=8,
     threshold=0.4, nms_value=0.3,
     classes=len(labels),
-)
+)</code></pre>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Python - 单帧检测与投票决策</span>
+                        </div>
+                        <pre><code>N_FRAMES = 20
+MODE_CONST = 0x07
 
 # 单帧检测
 def detect_one_frame():
@@ -237,15 +242,7 @@ def detect_one_frame():
 
     packs = [pack_status(c) for c in counts]
     flag = 1 if sum(counts) > 0 else 0
-    return {'flag': flag, 'packs': packs, 'counts': counts, 'prob_sum': prob_sum}</code></pre>
-                    </div>
-
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>Python - 20 帧投票策略提升准确率</span>
-                        </div>
-                        <pre><code>N_FRAMES = 20
-MODE_CONST = 0x07
+    return {'flag': flag, 'packs': packs, 'counts': counts, 'prob_sum': prob_sum}
 
 # 主循环：触发 → 20帧检测 → 投票 → 发送
 while True:
@@ -263,10 +260,8 @@ while True:
 
         # 阶段2：投票决策
         if all(r['flag'] == 0 for r in results):
-            # 20 帧全部无检测结果 → 确认无动物
             target.flag = 0
         else:
-            # 以 packs 五元组为键统计频次
             freq = {}
             for idx, r in enumerate(results):
                 key = tuple(r['packs'])
@@ -275,13 +270,11 @@ while True:
                 else:
                     freq[key].append((idx, r['prob_sum']))
 
-            # 选择出现次数最多的结果（并列取置信度最高）
             best_key = max(freq.items(), 
                           key=lambda x: (len(x[1]), max(v for _, v in x[1])))[0]
             best_idx = max(freq[best_key], key=lambda t: t[1])[0]
             best = results[best_idx]
 
-            # 写入目标信息
             target.flag = best['flag']
             target.angle, target.distance, target.apriltag_id, \
             target.img_width, target.img_height = best['packs']
@@ -291,64 +284,48 @@ while True:
         yb_uart.write(bytearray(tx))</code></pre>
                     </div>
 
-                    <div class="challenge">
-                        <h3>投票策略效果</h3>
-                        <table class="specs-table">
-                            <thead>
-                                <tr>
-                                    <th>指标</th>
-                                    <th>单帧检测</th>
-                                    <th>20帧投票</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>准确率</td>
-                                    <td>~85%</td>
-                                    <td><strong>~95%+</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>漏检率</td>
-                                    <td>~10%</td>
-                                    <td><strong>~2%</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>误检率</td>
-                                    <td>~8%</td>
-                                    <td><strong>~3%</strong></td>
-                                </tr>
-                                <tr>
-                                    <td>响应延迟</td>
-                                    <td>~60ms</td>
-                                    <td>~1.2s</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
                     <h3>三、飞控端遍历算法设计</h3>
-                    <p>设计了基于 <strong>BFS（广度优先搜索）</strong>的最短路径规划算法，结合<strong>蛇形遍历</strong>策略，实现 9×7 网格地图的全覆盖巡查，同时避开 3 个禁飞区。</p>
+                    <p>设计了基于<strong>贪心算法</strong>的全覆盖路径规划，结合<strong>螺旋逼近死角 + BFS返航扫尾</strong>策略，实现 9×7 网格地图的全覆盖巡查，同时避开 3 个禁飞区。</p>
 
                     <figure class="project-figure">
                         <img src="images/drone-path-planning.svg" alt="路径规划算法">
-                        <figcaption>BFS 最短路径 + 蛇形遍历算法示意图</figcaption>
+                        <figcaption>贪心算法 + 螺旋逼近死角 + BFS 返航扫尾示意图</figcaption>
                     </figure>
 
                     <div class="code-block">
                         <div class="code-header">
-                            <span>C - BFS 最短路径算法 (Route patrol.c)</span>
+                            <span>C - 贪心路径规划算法 (Route patrol.c)</span>
                         </div>
                         <pre><code>// 四方向：上、下、左、右
 static int  DX[4]   = {-1, 1, 0, 0};
 static int  DY[4]   = { 0, 0,-1, 1};
 static char DIRC[4] = {'U','D','L','R'};
 
+// 贪心选择：从当前格找最近的可走邻居
+static int greedy_next(const int m[MAP_HEIGHT][MAP_WIDTH],
+                       int cr, int cc, int *nr, int *nc)
+{
+    int best_dist = 999;
+    int best_r = -1, best_c = -1;
+    for (int k = 0; k < 4; ++k) {
+        int r = cr + DX[k], c = cc + DY[k];
+        if (!passable(r, c, m)) continue;
+        int dist = abs(r - cr) + abs(c - cc);
+        if (dist < best_dist) {
+            best_dist = dist;
+            best_r = r; best_c = c;
+        }
+    }
+    *nr = best_r; *nc = best_c;
+    return (best_r >= 0) ? 0 : -1;
+}
+
+// BFS 最短路径（返航扫尾用）
 static int bfs_shortest(const int m[MAP_HEIGHT][MAP_WIDTH],
                         int sr, int sc, int tr, int tc, char *out_dir)
 {
     if (sr == tr && sc == tc) return 0;
 
-    // 队列与标记数组
     static int  qx[MAP_HEIGHT * MAP_WIDTH];
     static int  qy[MAP_HEIGHT * MAP_WIDTH];
     static bool vis[MAP_HEIGHT][MAP_WIDTH];
@@ -357,7 +334,6 @@ static int bfs_shortest(const int m[MAP_HEIGHT][MAP_WIDTH],
     memset(vis, 0, sizeof(vis));
     memset(pre_dir, 0, sizeof(pre_dir));
 
-    // BFS 入队起点
     int front = 0, rear = 0;
     qx[rear] = sr; qy[rear] = sc; rear++;
     vis[sr][sc] = true;
@@ -369,15 +345,14 @@ static int bfs_shortest(const int m[MAP_HEIGHT][MAP_WIDTH],
             int nr = r + DX[k], nc = c + DY[k];
             if (!passable(nr, nc, m) || vis[nr][nc]) continue;
             vis[nr][nc] = true;
-            pre_dir[nr][nc] = DIRC[k];   // 记录来向
+            pre_dir[nr][nc] = DIRC[k];
             qx[rear] = nr; qy[rear] = nc; rear++;
             if (nr == tr && nc == tc) { found = true; goto DONE; }
         }
     }
 DONE:
-    if (!found) return -1;   // 不可达
+    if (!found) return -1;
 
-    // 回溯生成路径方向序列
     char tmp[MAP_HEIGHT * MAP_WIDTH];
     int len = 0;
     int cr = tr, cc = tc;
@@ -389,7 +364,6 @@ DONE:
         else if (d == 'L') cc += 1;
         else if (d == 'R') cc -= 1;
     }
-    // 反转得到从起点到终点的方向序列
     for (int i = 0; i < len; ++i)
         out_dir[i] = tmp[len - 1 - i];
 
@@ -399,75 +373,54 @@ DONE:
 
                     <div class="code-block">
                         <div class="code-header">
-                            <span>C - 蛇形遍历目标生成</span>
+                            <span>C - 螺旋遍历 + BFS 返航扫尾</span>
                         </div>
-                        <pre><code>// 生成蛇形覆盖目标（自底向上，交替左右方向），仅包含可走格
-static int build_snake_targets(const int m[MAP_HEIGHT][MAP_WIDTH],
-                               int tr[], int tc[])
+                        <pre><code>// 生成贪心覆盖路径：螺旋遍历主路径 + BFS 扫尾死角 + 返回起点
+int build_cover_path_with_return(const int stop[3][2], int *out_steps, int max_steps)
 {
-    int cnt = 0;
-    for (int r = MAP_HEIGHT - 1, layer = 0; r >= 0; --r, ++layer) {
-        if (layer % 2 == 0) { // 右->左
-            for (int c = MAP_WIDTH - 1; c >= 0; --c)
-                if (m[r][c] == 0) { tr[cnt] = r; tc[cnt] = c; cnt++; }
-        } else {              // 左->右
-            for (int c = 0; c < MAP_WIDTH; ++c)
-                if (m[r][c] == 0) { tr[cnt] = r; tc[cnt] = c; cnt++; }
-        }
-    }
-    return cnt;
-}</code></pre>
-                    </div>
-
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span>C - 完整路径拼接（含返回起点）</span>
-                        </div>
-                        <pre><code>int build_cover_path_with_return(const int stop[3][2], int *out_steps, int max_steps)
-{
-    // 1. 构建地图，标记禁飞区
     int map[MAP_HEIGHT][MAP_WIDTH];
     memset(map, 0, sizeof(map));
     for (int i = 0; i < 3; ++i)
         map[stop[i][0]][stop[i][1]] = 1;
 
-    // 2. 起点：右下角
-    const int SR = MAP_HEIGHT - 1;
-    const int SC = MAP_WIDTH  - 1;
-
-    // 3. 生成蛇形遍历目标序列
-    int tr[MAP_HEIGHT * MAP_WIDTH], tc[MAP_HEIGHT * MAP_WIDTH];
-    int tcnt = build_snake_targets(map, tr, tc);
-
-    // 4. 找到起点在序列中的位置
-    int sidx = -1;
-    for (int i = 0; i < tcnt; ++i)
-        if (tr[i] == SR && tc[i] == SC) { sidx = i; break; }
+    bool visited[MAP_HEIGHT][MAP_WIDTH];
+    memset(visited, 0, sizeof(visited));
 
     int total_len = 0;
-    int cr = SR, cc = SC;
+    int cr = MAP_HEIGHT - 1, cc = MAP_WIDTH - 1;
+    visited[cr][cc] = true;
+
+    // Phase 1: 贪心螺旋遍历 - 每次选择最近的未访问邻居
+    while (1) {
+        int next_r, next_c;
+        if (greedy_next(map, cr, cc, &next_r, &next_c) < 0)
+            break;
+        if (visited[next_r][next_c])
+            break;
+        visited[next_r][next_c] = true;
+        int dir = dir_to_code(cr, cc, next_r, next_c);
+        out_steps[total_len++] = dir;
+        cr = next_r; cc = next_c;
+    }
+
+    // Phase 2: BFS 返航扫尾 - 找未覆盖的死角并用 BFS 到达
+    for (int r = 0; r < MAP_HEIGHT; ++r) {
+        for (int c = 0; c < MAP_WIDTH; ++c) {
+            if (map[r][c] == 0 && !visited[r][c]) {
+                char seg[MAX_PATH];
+                int len = bfs_shortest(map, cr, cc, r, c, seg);
+                for (int k = 0; k < len; ++k)
+                    out_steps[total_len + k] = dirchar_to_code(seg[k]);
+                total_len += len;
+                cr = r; cc = c;
+                visited[r][c] = true;
+            }
+        }
+    }
+
+    // Phase 3: BFS 返回起点
     char seg[MAX_PATH];
-
-    // 5. 从起点开始，依次 BFS 到后续目标
-    for (int i = sidx + 1; i < tcnt; ++i) {
-        int len = bfs_shortest(map, cr, cc, tr[i], tc[i], seg);
-        for (int k = 0; k < len; ++k)
-            out_steps[total_len + k] = dirchar_to_code(seg[k]);
-        total_len += len;
-        cr = tr[i]; cc = tc[i];
-    }
-
-    // 6. 再 BFS 到序列前面的目标（完成闭环）
-    for (int i = 0; i < sidx; ++i) {
-        int len = bfs_shortest(map, cr, cc, tr[i], tc[i], seg);
-        for (int k = 0; k < len; ++k)
-            out_steps[total_len + k] = dirchar_to_code(seg[k]);
-        total_len += len;
-        cr = tr[i]; cc = tc[i];
-    }
-
-    // 7. 最后返回起点
-    int len = bfs_shortest(map, cr, cc, SR, SC, seg);
+    int len = bfs_shortest(map, cr, cc, MAP_HEIGHT-1, MAP_WIDTH-1, seg);
     for (int k = 0; k < len; ++k)
         out_steps[total_len + k] = dirchar_to_code(seg[k]);
     total_len += len;
@@ -496,26 +449,18 @@ static int build_snake_targets(const int m[MAP_HEIGHT][MAP_WIDTH],
                         <figcaption>2025 年全国大学生电子设计竞赛重庆赛区二等奖</figcaption>
                     </figure>
 
-                    <figure class="project-figure">
-                        <video controls style="width:100%; border-radius:16px;">
-                            <source src="Materials/Drone/pic/比赛期间的测试片段.mp4" type="video/mp4">
-                            您的浏览器不支持视频播放。
-                        </video>
-                        <figcaption>比赛期间的测试片段</figcaption>
-                    </figure>
-
                     <h2>落地成果</h2>
                     <div class="results">
                         <div class="result-item">
-                            <span class="result-number">95<small>%+</small></span>
+                            <span class="result-number">70<small>%+</small></span>
                             <span class="result-label">动物识别准确率</span>
                         </div>
                         <div class="result-item">
-                            <span class="result-number">63<small>格</small></span>
+                            <span class="result-number">60<small>格</small></span>
                             <span class="result-label">全覆盖巡查</span>
                         </div>
                         <div class="result-item">
-                            <span class="result-number">300<small>s</small></span>
+                            <span class="result-number">500<small>s</small></span>
                             <span class="result-label">时限内完成</span>
                         </div>
                         <div class="result-item">
@@ -527,10 +472,10 @@ static int build_snake_targets(const int m[MAP_HEIGHT][MAP_WIDTH],
                     <h2>项目资源</h2>
                     <ul class="resource-list">
                         <li><strong>飞控固件：</strong> CarryPilot V6.0.2（基于 TI Tiva C Series TM4C123GH6PM）</li>
-                        <li><strong>视觉方案：</strong> K210 (MaixPy + YOLOv2) + 20 帧投票策略</li>
+                        <li><strong>视觉方案：</strong> K210 (MaixPy + YOLO) + 20 帧投票策略</li>
                         <li><strong>机载计算：</strong> 树莓派 4B (ROS + SLAM + OpenCV)</li>
                         <li><strong>激光雷达：</strong> 乐动 DTOF 雷达感应器（SLAM 建图定位）</li>
-                        <li><strong>路径算法：</strong> BFS 最短路径 + 蛇形全覆盖遍历</li>
+                        <li><strong>路径算法：</strong> 贪心算法 + 螺旋逼近死角 + BFS 返航扫尾</li>
                         <li><strong>地面站：</strong> 触摸屏 + 蓝牙通信</li>
                         <li><strong>开发环境：</strong> Keil MDK µVision 5 + MaixPy IDE</li>
                     </ul>

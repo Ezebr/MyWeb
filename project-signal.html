@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧信号显示器 - FPGA DAC 信号发生器 | Ezebr</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/project.css">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">EZE<span>BR</span></a>
+            <ul class="nav-links">
+                <li><a href="index.html#projects">返回项目列表</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="project-detail">
+        <div class="container">
+            <a href="index.html#projects" class="back-link"><i class="ph ph-arrow-left"></i> 返回首页</a>
+            
+            <article class="project-article">
+                <header class="project-header">
+                    <h1>智慧信号显示器</h1>
+                    <p class="project-subtitle">基于国产安路 FPGA 的 DAC 信号发生器设计与实现</p>
+                    <div class="project-meta">
+                        <time>嵌入式大赛 FPGA 赛道</time>
+                        <div class="tags">
+                            <span>安路 FPGA</span>
+                            <span>Verilog</span>
+                            <span>DDS</span>
+                            <span>DAC904</span>
+                            <span>VGA</span>
+                            <span>WiFi</span>
+                        </div>
+                    </div>
+                </header>
+
+                <figure class="project-figure">
+                    <img src="https://cdn-mineru.openxlab.org.cn/result/2026-06-06/07772f02-fb9a-4d08-8b93-77bfb5a1aac4/42d7a7d62821832c0024e5b1f9a85e98a627eb347c5953a87573e1271f682f33.jpg" alt="智慧信号显示器">
+                    <figcaption>智慧信号显示器实物图 · 集示波器与信号发生器于一体</figcaption>
+                </figure>
+
+                <div class="project-content">
+                    <h2>项目概述</h2>
+                    <p>本项目设计并实现了一款<strong>智慧信号显示器</strong>，集数字存储示波器与信号发生器于一体。系统以国产安路（Anlogic）EG4S20BG256 FPGA 为核心处理单元，通过高速 ADC（AD9248）完成信号采集与示波显示，通过高精度 DAC（DAC904）实现多种波形的信号生成，并支持语音控制与 WiFi 上位机远程操控。</p>
+                    
+                    <p><strong>我在项目中主要负责 DAC 信号发生器部分的开发</strong>，包括 DDS 波形生成、频率/幅度/相位控制、UART 语音解析、WiFi 模块驱动，以及 VGA 显示器的字符 Mif 生成等模块的设计与实现。</p>
+
+                    <div class="challenge">
+                        <h3>系统架构</h3>
+                        <img src="https://cdn-mineru.openxlab.org.cn/result/2026-06-06/07772f02-fb9a-4d08-8b93-77bfb5a1aac4/cd98c251b7131fbb5addecca5a285747dea91ddc4412ab4e5a0c8b4fcc1ea679.jpg" alt="系统架构" style="width:100%; border-radius:12px; margin:1rem 0;">
+                        <p style="text-align:center; color:var(--text-muted);">智能信号显示器模块化结构：控制模块 + 信号发生器模块 + 示波器模块</p>
+                    </div>
+
+                    <h2>我的工作板块</h2>
+
+                    <h3>一、DAC 算法设计（DDS 信号发生器）</h3>
+                    <p>DDS（Direct Digital Synthesis，直接数字频率合成）是信号发生器的核心技术。通过 64 位相位累加器 + 4096 点 ROM 查表，实现 1KHz~60MHz 的高精度频率输出。</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Verilog - 64位相位累加器 (ROM_Addr_Add)</span>
+                        </div>
+                        <pre><code>module ROM_Addr_Add(
+    input           Clk_I,       // 180MHz DDS 时钟
+    input           Rst_N_I,
+    input  [63:0]   Fre_W_I,     // 频率控制字
+    output [11:0]   Addr_O       // 查表地址（取高12位）
+);
+
+reg [63:0] Add;
+
+always @(posedge Clk_I) begin
+    if (!Rst_N_I)
+        Add <= 64'd0;
+    else
+        Add <= Add + Fre_W_I;    // 每个时钟周期累加一次
+end
+
+// 取高 12 位作为 ROM 地址，对应 4096 个采样点
+assign Addr_O = Add[63:52];
+
+endmodule</code></pre>
+                    </div>
+
+                    <h3>三种波形生成策略</h3>
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-number">正弦波</span>
+                            <span class="result-label">ROM 查表 4096 点</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">三角波</span>
+                            <span class="result-label">线性计算 无需 ROM</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">方波</span>
+                            <span class="result-label">阈值判断 最简单</span>
+                        </div>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Verilog - 正弦波 ROM 查表 (安路 IP 核)</span>
+                        </div>
+                        <pre><code>EG_LOGIC_BRAM #(
+    .DATA_WIDTH_A(14),
+    .ADDR_WIDTH_A(12),
+    .DATA_DEPTH_A(4096),
+    .MODE("SP"),
+    .IMPLEMENT("9K"),
+    .INIT_FILE("../mif/SineWaveData.mif")   // MATLAB 生成的正弦数据
+) inst (
+    .addra(addra),
+    .doa(doa),
+    .clka(clka),
+    .wea(1'b0),     // 只读
+    // ...
+);</code></pre>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Verilog - 三角波线性计算</span>
+                        </div>
+                        <pre><code>// Rom_Addr[11] = 0：上升沿（0→满幅）
+// Rom_Addr[11] = 1：下降沿（满幅→0）
+assign wave_Triangular = Rom_Addr[11]
+    ? {11'd2047 - Rom_Addr[10:0], 3'b000}   // 下降
+    : {Rom_Addr[10:0], 3'b000};              // 上升</code></pre>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Verilog - 方波阈值判断</span>
+                        </div>
+                        <pre><code>assign wave_Square = Rom_Addr[11]
+    ? 14'b11_1111_1111_1111   // 满幅
+    : 14'b00_0000_0000_0000;  // 零</code></pre>
+                    </div>
+
+                    <h3>频率控制与多档位加速</h3>
+                    <p>频率控制模块采用<strong>多档位加速</strong>策略——频率越高步进越大，兼顾低频精细调节和高频快速切换：</p>
+
+                    <div class="challenge">
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>频率范围</th>
+                                    <th>步进</th>
+                                    <th>调节体验</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>&lt; 10KHz</td>
+                                    <td>1KHz</td>
+                                    <td>精细</td>
+                                </tr>
+                                <tr>
+                                    <td>10KHz ~ 100KHz</td>
+                                    <td>10KHz</td>
+                                    <td>适中</td>
+                                </tr>
+                                <tr>
+                                    <td>100KHz ~ 1MHz</td>
+                                    <td>100KHz</td>
+                                    <td>较快</td>
+                                </tr>
+                                <tr>
+                                    <td>1MHz ~ 60MHz</td>
+                                    <td>1MHz</td>
+                                    <td>快速</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Verilog - 频率控制字多档位加速 (Fre_ControlWord)</span>
+                        </div>
+                        <pre><code>module Fre_ControlWord (
+    input           Clk_I,
+    input           Rst_N_I,
+    input           Key_Fre_I,
+    input  [3:0]    voice_i,
+    output [63:0]   Fre_W_O
+);
+
+reg [63:0] Fre;
+
+// 按键消抖
+Key_Delay u_Key_Delay(.Clk_I(Clk_I), .Key_I(Key_Fre_I), .Key_O(Key_Out));
+
+// 语音控制与按键控制取或
+assign Sum_Ctrl = ~(Voice_Switch ^ Key_Out);
+
+always @(posedge Sum_Ctrl or negedge Rst_N_I) begin
+    if (!Rst_N_I)
+        Fre <= 64'd102481911520608;             // 默认 1KHz
+    else begin
+        if      (Fre < 64'd1024819115206080)     // < 10KHz
+            Fre <= Fre + 64'd102481911520608;    // 步进 1KHz
+        else if (Fre < 64'd10248191152060800)    // < 100KHz
+            Fre <= Fre + 64'd1024819115206080;   // 步进 10KHz
+        else if (Fre < 64'd102481911520608000)   // < 1MHz
+            Fre <= Fre + 64'd10248191152060800;  // 步进 100KHz
+        else if (Fre < 64'd6148914691236517205)  // < 60MHz
+            Fre <= Fre + 64'd102481911520608000; // 步进 1MHz
+        else
+            Fre <= 64'd102481911520608;          // 溢出回绕
+    end
+end
+
+assign Fre_W_O = Fre;
+endmodule</code></pre>
+                    </div>
+
+                    <h3>幅度缩放与相位偏移</h3>
+                    <p>波形选择模块负责在三种波形间切换，并实现幅度的 10 档缩放。以 8192（14 位中值）为零点，正负半周分别缩放：</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Verilog - 幅度缩放核心逻辑</span>
+                        </div>
+                        <pre><code>// 幅度缩放：以 8192 (14位中值) 为零点，正负半周分别缩放
+always @(posedge Clk_I or negedge Rst_N_I) begin
+    case (Sel)
+        2'd1: Dac_Data_Reg_i <= Wave_Sine_I;
+        2'd2: Dac_Data_Reg_i <= wave_Triangular_I;
+        2'd3: Dac_Data_Reg_i <= wave_Square_I;
+    endcase
+
+    if (Dac_Data_Reg_i > AMP_ZERO)
+        Dac_Data_Reg <= (Dac_Data_Reg_i - AMP_ZERO) * Scale / 10 + AMP_ZERO;
+    else
+        Dac_Data_Reg <= AMP_ZERO - (AMP_ZERO - Dac_Data_Reg_i) * Scale / 10;
+end</code></pre>
+                    </div>
+
+                    <h3>二、VGA 显示器字符 Mif 生成</h3>
+                    <p>负责 VGA 显示驱动中的字符字模数据生成，将 ASCII 字符转换为点阵数据存储在 Mif 文件中，用于在 VGA 显示器上显示波形参数、频率、幅度等信息。</p>
+
+                    <h2>控制接口设计</h2>
+
+                    <h3>语音控制（UART 接收）</h3>
+                    <p>天问语音模块通过 UART 发送识别结果，FPGA 端用状态机解析串口数据，将接收到的字节映射为 4 位控制码：</p>
+
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>Verilog - UART 语音解析控制码映射</span>
+                        </div>
+                        <pre><code>// 控制码映射
+always @(posedge clk or negedge rst_n) begin
+    if (state == S_DATA)
+        case (rx_data)
+            8'd1: ctrl <= 4'd1;   // 增大频率
+            8'd2: ctrl <= 4'd2;   // 改变波形
+            8'd3: ctrl <= 4'd3;   // 增大振幅
+            8'd4: ctrl <= 4'd4;   // 减小振幅
+            8'd5: ctrl <= 4'd5;   // 正向相移
+            8'd6: ctrl <= 4'd6;   // 负向相移
+            8'd7: ctrl <= 4'd7;   // WiFi 重置
+            default: ctrl <= 4'd0;
+        endcase
+    else
+        ctrl <= 4'd0;   // 脉冲输出，非锁存
+end</code></pre>
+                    </div>
+
+                    <h3>WiFi 远程控制</h3>
+                    <p>WiFi 模块上电后通过 FPGA 发送 AT 指令初始化为 TCP 服务器模式，上位机通过局域网连接后即可发送控制命令：</p>
+
+                    <figure class="project-figure">
+                        <img src="https://cdn-mineru.openxlab.org.cn/result/2026-06-06/07772f02-fb9a-4d08-8b93-77bfb5a1aac4/931b957272c64fa061b36d6e08accd09a07b547d10c90d961a09605b22a07ccc.jpg" alt="WiFi 上位机控制">
+                        <figcaption>WiFi 上位机远程控制界面</figcaption>
+                    </figure>
+
+                    <h2>硬件系统</h2>
+
+                    <figure class="project-figure">
+                        <img src="https://cdn-mineru.openxlab.org.cn/result/2026-06-06/07772f02-fb9a-4d08-8b93-77bfb5a1aac4/ac3eaddf779a73e2b084958a50f802a7378db1bc106370388cceefcad5e9e274.jpg" alt="硬件系统">
+                        <figcaption>硬件系统实物图</figcaption>
+                    </figure>
+
+                    <div class="challenge">
+                        <table class="specs-table">
+                            <thead>
+                                <tr>
+                                    <th>模块</th>
+                                    <th>参数</th>
+                                    <th>指标</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td rowspan="4"><strong>DAC（信号发生器）</strong></td>
+                                    <td>芯片型号</td>
+                                    <td>DAC904，14 位单通道</td>
+                                </tr>
+                                <tr>
+                                    <td>更新率</td>
+                                    <td>165 Msps</td>
+                                </tr>
+                                <tr>
+                                    <td>输出波形</td>
+                                    <td>正弦波、方波、三角波</td>
+                                </tr>
+                                <tr>
+                                    <td>频率范围</td>
+                                    <td>1KHz ~ 60MHz</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="3"><strong>ADC（示波器）</strong></td>
+                                    <td>芯片型号</td>
+                                    <td>AD9248，14 位双通道</td>
+                                </tr>
+                                <tr>
+                                    <td>采样率</td>
+                                    <td>最高 50 MS/s</td>
+                                </tr>
+                                <tr>
+                                    <td>输入范围</td>
+                                    <td>±5V (10Vpp)，50Ω</td>
+                                </tr>
+                                <tr>
+                                    <td rowspan="2"><strong>交互</strong></td>
+                                    <td>控制方式</td>
+                                    <td>按键 + 语音 + WiFi 上位机</td>
+                                </tr>
+                                <tr>
+                                    <td>显示</td>
+                                    <td>VGA 接口波形与参数显示</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h2>成果展示</h2>
+
+                    <figure class="project-figure">
+                        <img src="https://cdn-mineru.openxlab.org.cn/result/2026-06-06/07772f02-fb9a-4d08-8b93-77bfb5a1aac4/ba1a9ce81931d8baba1ce82bf8cfc7e20d32f8fce618f4a23337e4f6bef8b68c.jpg" alt="机械成果">
+                        <figcaption>机械成果展示</figcaption>
+                    </figure>
+
+                    <figure class="project-figure">
+                        <img src="https://cdn-mineru.openxlab.org.cn/result/2026-06-06/07772f02-fb9a-4d08-8b93-77bfb5a1aac4/b3545901a8687f1c00b72c16f0df4bf8ac80bf4f04d3af04ce0eb9102ed9fb57.jpg" alt="电路成果">
+                        <figcaption>电路成果展示</figcaption>
+                    </figure>
+
+                    <figure class="project-figure">
+                        <img src="https://cdn-mineru.openxlab.org.cn/result/2026-06-06/07772f02-fb9a-4d08-8b93-77bfb5a1aac4/cf70635e9a9eeb9a12beefea6851a7148cf46c3753419734c0e932073500f75b.jpg" alt="软件成果">
+                        <figcaption>软件成果展示</figcaption>
+                    </figure>
+
+                    <h2>落地成果</h2>
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-number">60<small>MHz</small></span>
+                            <span class="result-label">最大输出频率</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">14<small>bit</small></span>
+                            <span class="result-label">DAC 分辨率</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">3<small>种</small></span>
+                            <span class="result-label">波形输出</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-number">10<small>档</small></span>
+                            <span class="result-label">幅度可调</span>
+                        </div>
+                    </div>
+
+                    <h2>开发环境</h2>
+                    <ul class="resource-list">
+                        <li><strong>IDE：</strong> 安路 TangDynasty (TD) v6.2</li>
+                        <li><strong>FPGA：</strong> 安路 EG4S20BG256（20K LUT，国产）</li>
+                        <li><strong>语言：</strong> Verilog HDL</li>
+                        <li><strong>IP 核：</strong> EG_PHY_PLL（时钟）、EG_LOGIC_BRAM（ROM）、FIFO（缓存）</li>
+                        <li><strong>DAC：</strong> TI DAC904 (14-bit, 165Msps)</li>
+                        <li><strong>ADC：</strong> AD9248 (14-bit, 65Msps，示波器部分)</li>
+                    </ul>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Ezebr. 构筑于星辰与代码之上。</p>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

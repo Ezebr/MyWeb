@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <defs>
+    <linearGradient id="androidGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#81C784;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="mqttGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF9800;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="espGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#E53935;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF7043;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2196F3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#64B5F6;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow6">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+    <marker id="arrowMqtt" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#FF9800"/>
+    </marker>
+    <marker id="arrowHttp" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#2196F3"/>
+    </marker>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="400" y="30" text-anchor="middle" fill="#1F2937" font-size="18" font-weight="bold">Android 智能门锁配套 App · 三层通信架构</text>
+  
+  <!-- Android App -->
+  <rect x="30" y="60" width="180" height="280" rx="16" fill="url(#androidGrad)" filter="url(#shadow6)"/>
+  <text x="120" y="90" text-anchor="middle" fill="white" font-size="15" font-weight="bold">Android App</text>
+  
+  <!-- App 功能模块 -->
+  <rect x="50" y="105" width="140" height="30" rx="6" fill="rgba(255,255,255,0.2)"/>
+  <text x="120" y="125" text-anchor="middle" fill="white" font-size="11">控制面板</text>
+  
+  <rect x="50" y="145" width="140" height="30" rx="6" fill="rgba(255,255,255,0.2)"/>
+  <text x="120" y="165" text-anchor="middle" fill="white" font-size="11">临时通行证 (QR)</text>
+  
+  <rect x="50" y="185" width="140" height="30" rx="6" fill="rgba(255,255,255,0.2)"/>
+  <text x="120" y="205" text-anchor="middle" fill="white" font-size="11">访问日志</text>
+  
+  <rect x="50" y="225" width="140" height="30" rx="6" fill="rgba(255,255,255,0.2)"/>
+  <text x="120" y="245" text-anchor="middle" fill="white" font-size="11">成员管理</text>
+  
+  <rect x="50" y="265" width="140" height="30" rx="6" fill="rgba(255,255,255,0.2)"/>
+  <text x="120" y="285" text-anchor="middle" fill="white" font-size="11">远程视频监控</text>
+  
+  <rect x="50" y="305" width="140" height="25" rx="6" fill="rgba(255,255,255,0.2)"/>
+  <text x="120" y="323" text-anchor="middle" fill="white" font-size="10">语音对讲 (WebSocket)</text>
+  
+  <!-- MQTT Broker -->
+  <rect x="320" y="80" width="160" height="100" rx="14" fill="url(#mqttGrad)" filter="url(#shadow6)"/>
+  <text x="400" y="110" text-anchor="middle" fill="white" font-size="14" font-weight="bold">MQTT Broker</text>
+  <text x="400" y="130" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="11">tcp://47.108.29.157</text>
+  <text x="400" y="150" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">QoS 1 · 双向通信</text>
+  <text x="400" y="168" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="9">sml/pass · sml/control · sml/enroll</text>
+  
+  <!-- Flask Server -->
+  <rect x="320" y="220" width="160" height="100" rx="14" fill="url(#serverGrad)" filter="url(#shadow6)"/>
+  <text x="400" y="250" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Flask Server</text>
+  <text x="400" y="270" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="11">HTTP REST API</text>
+  <text x="400" y="290" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">照片存储 · MJPEG 转发</text>
+  <text x="400" y="308" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="9">访问日志管理</text>
+  
+  <!-- ESP32-P4 -->
+  <rect x="600" y="120" width="170" height="140" rx="14" fill="url(#espGrad2)" filter="url(#shadow6)"/>
+  <text x="685" y="150" text-anchor="middle" fill="white" font-size="14" font-weight="bold">ESP32-P4</text>
+  <text x="685" y="170" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="11">智能门锁</text>
+  
+  <rect x="620" y="185" width="130" height="25" rx="5" fill="rgba(255,255,255,0.2)"/>
+  <text x="685" y="203" text-anchor="middle" fill="white" font-size="10">人脸检测/识别</text>
+  
+  <rect x="620" y="215" width="130" height="25" rx="5" fill="rgba(255,255,255,0.2)"/>
+  <text x="685" y="233" text-anchor="middle" fill="white" font-size="10">门锁控制</text>
+  
+  <rect x="620" y="245" width="130" height="25" rx="5" fill="rgba(255,255,255,0.2)"/>
+  <text x="685" y="263" text-anchor="middle" fill="white" font-size="10">MJPEG 推流</text>
+  
+  <!-- 箭头：App → MQTT -->
+  <line x1="210" y1="130" x2="320" y2="130" stroke="#FF9800" stroke-width="2.5" marker-end="url(#arrowMqtt)"/>
+  <text x="265" y="120" text-anchor="middle" fill="#E65100" font-size="10" font-weight="bold">MQTT pub/sub</text>
+  
+  <!-- 箭头：MQTT → ESP32 -->
+  <line x1="480" y1="140" x2="600" y2="160" stroke="#FF9800" stroke-width="2.5" marker-end="url(#arrowMqtt)"/>
+  <text x="540" y="140" text-anchor="middle" fill="#E65100" font-size="10" font-weight="bold">MQTT</text>
+  
+  <!-- 箭头：App → Flask (HTTP) -->
+  <line x1="210" y1="270" x2="320" y2="270" stroke="#2196F3" stroke-width="2.5" marker-end="url(#arrowHttp)"/>
+  <text x="265" y="260" text-anchor="middle" fill="#1565C0" font-size="10" font-weight="bold">HTTP REST</text>
+  
+  <!-- 箭头：App → Flask (MJPEG) -->
+  <line x1="210" y1="290" x2="320" y2="290" stroke="#2196F3" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="265" y="305" text-anchor="middle" fill="#1565C0" font-size="9">MJPEG Stream</text>
+  
+  <!-- 箭头：Flask → ESP32 -->
+  <line x1="480" y1="260" x2="600" y2="230" stroke="#2196F3" stroke-width="2" marker-end="url(#arrowHttp)"/>
+  <text x="540" y="255" text-anchor="middle" fill="#1565C0" font-size="9">HTTP POST</text>
+  
+  <!-- WebSocket 语音对讲 -->
+  <path d="M 190,320 Q 265,350 320,280" fill="none" stroke="#9C27B0" stroke-width="2" stroke-dasharray="6,3"/>
+  <text x="250" y="345" text-anchor="middle" fill="#7B1FA2" font-size="9">WebSocket 语音</text>
+  
+  <!-- 图例 -->
+  <rect x="30" y="360" width="740" height="30" rx="8" fill="#F5F5F5" stroke="#E0E0E0" stroke-width="1"/>
+  <line x1="50" y1="375" x2="80" y2="375" stroke="#FF9800" stroke-width="2"/>
+  <text x="90" y="380" fill="#4B5563" font-size="10">MQTT 控制层</text>
+  <line x1="200" y1="375" x2="230" y2="375" stroke="#2196F3" stroke-width="2"/>
+  <text x="240" y="380" fill="#4B5563" font-size="10">HTTP 数据层</text>
+  <line x1="350" y1="375" x2="380" y2="375" stroke="#9C27B0" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="390" y="380" fill="#4B5563" font-size="10">WebSocket 媒体层</text>
+  <text x="550" y="380" fill="#4B5563" font-size="10">三层通信：控制 + 数据 + 媒体</text>
+</svg>

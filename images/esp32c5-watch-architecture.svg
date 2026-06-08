@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450">
+  <defs>
+    <linearGradient id="watchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00BCD4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#26C6DA;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7E57C2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9575CD;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="aiGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF7043;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF8A65;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow7">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- 标题 -->
+  <text x="400" y="30" text-anchor="middle" fill="#1F2937" font-size="18" font-weight="bold">ESP32-C5 智能手表 · 边端云协同架构</text>
+  
+  <!-- 手表主体 -->
+  <rect x="30" y="60" width="250" height="330" rx="20" fill="url(#watchGrad)" filter="url(#shadow7)"/>
+  <text x="155" y="90" text-anchor="middle" fill="white" font-size="16" font-weight="bold">ESP32-C5 智能手表</text>
+  <text x="155" y="110" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="11">RISC-V 单核 · FreeRTOS</text>
+  
+  <!-- 屏幕 -->
+  <rect x="60" y="125" width="190" height="100" rx="10" fill="#1A237E"/>
+  <text x="155" y="160" text-anchor="middle" fill="#64FFDA" font-size="14" font-weight="bold">LVGL UI</text>
+  <text x="155" y="180" text-anchor="middle" fill="#B2FF59" font-size="10">SquareLine Studio 设计</text>
+  <text x="155" y="200" text-anchor="middle" fill="#B2FF59" font-size="10">表盘 · 天气 · 闹钟</text>
+  
+  <!-- 传感器模块 -->
+  <rect x="50" y="240" width="100" height="40" rx="8" fill="rgba(255,255,255,0.2)"/>
+  <text x="100" y="265" text-anchor="middle" fill="white" font-size="10" font-weight="bold">BMI270 陀螺仪</text>
+  
+  <rect x="160" y="240" width="100" height="40" rx="8" fill="rgba(255,255,255,0.2)"/>
+  <text x="210" y="265" text-anchor="middle" fill="white" font-size="10" font-weight="bold">ADC 麦克风</text>
+  
+  <rect x="50" y="290" width="100" height="40" rx="8" fill="rgba(255,255,255,0.2)"/>
+  <text x="100" y="315" text-anchor="middle" fill="white" font-size="10" font-weight="bold">PDM 喇叭</text>
+  
+  <rect x="160" y="290" width="100" height="40" rx="8" fill="rgba(255,255,255,0.2)"/>
+  <text x="210" y="315" text-anchor="middle" fill="white" font-size="10" font-weight="bold">MAX30102 心率</text>
+  
+  <rect x="50" y="340" width="210" height="35" rx="8" fill="rgba(255,255,255,0.15)"/>
+  <text x="155" y="363" text-anchor="middle" fill="white" font-size="10">TFLite Micro CNN · 7类手势 · ~11.6KB · 20ms</text>
+  
+  <!-- 边缘推理 -->
+  <rect x="310" y="60" width="150" height="80" rx="12" fill="url(#aiGrad2)" filter="url(#shadow7)"/>
+  <text x="385" y="85" text-anchor="middle" fill="white" font-size="13" font-weight="bold">边缘推理</text>
+  <text x="385" y="105" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">TFLite Micro</text>
+  <text x="385" y="120" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">1D CNN 手势识别</text>
+  <text x="385" y="135" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="9">本地推理 20ms</text>
+  
+  <!-- 云端服务 -->
+  <rect x="310" y="170" width="250" height="220" rx="16" fill="url(#cloudGrad)" filter="url(#shadow7)"/>
+  <text x="435" y="200" text-anchor="middle" fill="white" font-size="15" font-weight="bold">云端服务</text>
+  
+  <!-- ASR -->
+  <rect x="330" y="215" width="210" height="35" rx="8" fill="rgba(255,255,255,0.15)"/>
+  <text x="435" y="237" text-anchor="middle" fill="white" font-size="11">🎤 火山引擎 ASR (WebSocket)</text>
+  
+  <!-- LLM -->
+  <rect x="330" y="260" width="210" height="35" rx="8" fill="rgba(255,255,255,0.15)"/>
+  <text x="435" y="282" text-anchor="middle" fill="white" font-size="11">🧠 豆包 LLM (HTTPS)</text>
+  
+  <!-- TTS -->
+  <rect x="330" y="305" width="210" height="35" rx="8" fill="rgba(255,255,255,0.15)"/>
+  <text x="435" y="327" text-anchor="middle" fill="white" font-size="11">🔊 火山引擎 TTS (WebSocket)</text>
+  
+  <!-- MQTT -->
+  <rect x="330" y="350" width="210" height="30" rx="8" fill="rgba(255,255,255,0.15)"/>
+  <text x="435" y="370" text-anchor="middle" fill="white" font-size="10">📡 MQTT Broker (门铃/开门)</text>
+  
+  <!-- WiFi 配网 -->
+  <rect x="590" y="60" width="180" height="70" rx="12" fill="#43A047" filter="url(#shadow7)"/>
+  <text x="680" y="85" text-anchor="middle" fill="white" font-size="13" font-weight="bold">AP 配网</text>
+  <text x="680" y="105" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">Captive Portal</text>
+  <text x="680" y="120" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="9">NVS 持久化 · 37种语言</text>
+  
+  <!-- 天气 API -->
+  <rect x="590" y="150" width="180" height="60" rx="12" fill="#1E88E5" filter="url(#shadow7)"/>
+  <text x="680" y="175" text-anchor="middle" fill="white" font-size="13" font-weight="bold">Open-Meteo</text>
+  <text x="680" y="195" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">天气 API</text>
+  
+  <!-- 远程门锁 -->
+  <rect x="590" y="230" width="180" height="70" rx="12" fill="#E53935" filter="url(#shadow7)"/>
+  <text x="680" y="255" text-anchor="middle" fill="white" font-size="13" font-weight="bold">ESP32-P4 门锁</text>
+  <text x="680" y="275" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">MQTT 手势开门</text>
+  <text x="680" y="290" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="9">门铃通知 · 照片查看</text>
+  
+  <!-- 连接线 -->
+  <path d="M 280,120 Q 310,100 310,100" fill="none" stroke="#FF7043" stroke-width="2"/>
+  <path d="M 280,260 Q 310,260 310,280" fill="none" stroke="#7E57C2" stroke-width="2"/>
+  <path d="M 460,280 Q 550,280 590,265" fill="none" stroke="#E53935" stroke-width="2"/>
+  <path d="M 460,200 Q 550,180 590,180" fill="none" stroke="#1E88E5" stroke-width="2"/>
+  <path d="M 280,350 Q 310,360 330,365" fill="none" stroke="#7E57C2" stroke-width="2"/>
+  
+  <!-- 图例 -->
+  <rect x="30" y="410" width="740" height="30" rx="8" fill="#F5F5F5" stroke="#E0E0E0" stroke-width="1"/>
+  <circle cx="60" cy="425" r="6" fill="#00BCD4"/>
+  <text x="75" y="430" fill="#4B5563" font-size="10">边 (本地推理)</text>
+  <circle cx="180" cy="425" r="6" fill="#FF7043"/>
+  <text x="195" y="430" fill="#4B5563" font-size="10">边缘 AI</text>
+  <circle cx="290" cy="425" r="6" fill="#7E57C2"/>
+  <text x="305" y="430" fill="#4B5563" font-size="10">云 (ASR/LLM/TTS)</text>
+  <circle cx="430" cy="425" r="6" fill="#43A047"/>
+  <text x="445" y="430" fill="#4B5563" font-size="10">配网</text>
+  <circle cx="520" cy="425" r="6" fill="#E53935"/>
+  <text x="535" y="430" fill="#4B5563" font-size="10">远程控制</text>
+</svg>
